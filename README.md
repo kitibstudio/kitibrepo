@@ -42,7 +42,7 @@ Table of Contents
 
 ## About The Project
 
-[Kitib editor with split preview](https://github.com/kitibstudio/kitibrepo)
+![Kitib editor with split preview](images/screenshot-editor.png)
 
 **Kitib** is a lightweight, native macOS app for professional writers who want their tools out of the way. It's a Markdown editor with live styling, so your files stay plain, portable Markdown while the app handles the look as you type. Everything beyond the page — preview, stats, export, terminal — stays hidden until you reach for it.
 
@@ -146,7 +146,7 @@ First launch: if macOS warns about an unidentified developer, right-click **Kiti
 
 **Help** — the ?-button in the toolbar (or ⌘/) opens a guide to Markdown formatting and all keyboard shortcuts.
 
-[Kitib built-in Markdown help](https://github.com/kitibstudio/kitibrepo)
+![Kitib built-in Markdown help](images/screenshot-help.png)
 
 *The built-in help (⌘/) lists every Markdown rule and keyboard shortcut without leaving the app.*
 
