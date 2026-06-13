@@ -379,4 +379,32 @@ final class AppState: ObservableObject {
     func revealInFinder(item: FileItem) {
         NSWorkspace.shared.activateFileViewerSelecting([item.url])
     }
+
+    /// Duplicates a file or folder alongside the original, appending " copy"
+    /// (and a number if needed) so the original is never clobbered.
+    func duplicate(item: FileItem) {
+        let dir = item.url.deletingLastPathComponent()
+        let ext = item.url.pathExtension
+        let base = item.url.deletingPathExtension().lastPathComponent
+
+        func candidate(_ suffix: String) -> URL {
+            let name = ext.isEmpty ? "\(base)\(suffix)" : "\(base)\(suffix).\(ext)"
+            return dir.appendingPathComponent(name)
+        }
+
+        var dest = candidate(" copy")
+        var n = 2
+        while FileManager.default.fileExists(atPath: dest.path) {
+            dest = candidate(" copy \(n)")
+            n += 1
+        }
+
+        do {
+            try FileManager.default.copyItem(at: item.url, to: dest)
+            refreshTree()
+            if !item.isDirectory {
+                selectedFileID = dest.path
+            }
+        } catch { NSSound.beep() }
+    }
 }

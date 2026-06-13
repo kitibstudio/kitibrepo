@@ -206,6 +206,7 @@ func rowMenu(for item: FileItem, state: AppState,
         renameText.wrappedValue = item.name
         renamingItem.wrappedValue = item
     }
+    Button("Duplicate") { state.duplicate(item: item) }
     Button("Reveal in Finder") { state.revealInFinder(item: item) }
     Divider()
     Button("Move to Trash", role: .destructive) { deletingItem.wrappedValue = item }
