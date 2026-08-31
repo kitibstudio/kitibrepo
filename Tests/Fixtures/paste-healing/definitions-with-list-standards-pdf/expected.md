@@ -1,0 +1,19 @@
+3.83 Factory Built Assembly (of LV Switchgear and
+Controlgear) - See IS 8623 (Part 1).
+
+3.84 Fault -A circuit condition in which current flows through an abnormal or unintended path. This may result from an insulation failure or a bridging of insulation. Conventionally the impedance between live conductors or between lives conductors and exposed or extraneous conductive parts at the fault position is considered negligible.
+
+3.85 Fault Current - A current resulting from a fault.
+
+3.86 Fault Protection - Protection against electric shock under single fault conditions.
+
+NOTE - For low voltage installation, systems and equipment, fault protection generally corresponds to protection against in direct contact, mainly with regards to failure of basic insulation.
+Indirect contact is "contact of persons or livestock with exposed-conductive parts which have become live under fault conditions."
+
+3.87 Final Circuit - A circuit connected directly to current using equipment, or to socket outlets or other outlet points for the connection of such equipment.
+
+3.88 Fire
+
+a) A process of combustion characterized by the emission of heat and effluent accompanied by smoke, and/or flame and/or glowing.
+
+b) Rapid combustion spreading uncontrolled in time and space.

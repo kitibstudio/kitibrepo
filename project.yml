@@ -1,0 +1,115 @@
+name: Kitib
+options:
+  bundleIdPrefix: com.sean
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "13.0"
+    iOS: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    DEVELOPMENT_TEAM: ""            # <-- set your Apple Developer Team ID in Xcode
+    CODE_SIGN_STYLE: Automatic
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+targets:
+  # ---------- macOS (the existing native app) ----------
+  Kitib-macOS:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/Core
+      - path: Sources/Shared
+      - path: Sources/Platform
+      - path: Sources/macOS
+      - path: Vendor/SwiftTerm
+      - path: Resources/Assets.xcassets
+      - path: web
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: Kitib
+        PRODUCT_BUNDLE_IDENTIFIER: com.sean.kitib
+        ENABLE_HARDENED_RUNTIME: YES
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Sean"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.productivity"
+
+  # ---------- iOS (iPhone + iPad) ----------
+  Kitib-iOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources/Core
+      - path: Sources/Shared
+      - path: Sources/Platform
+      - path: Sources/iOS
+      - path: Resources/Assets.xcassets
+      - path: web
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: Kitib
+        # Same bundle ID as macOS → one app record on App Store Connect.
+        PRODUCT_BUNDLE_IDENTIFIER: com.sean.kitib
+        TARGETED_DEVICE_FAMILY: "1,2"        # 1 = iPhone, 2 = iPad
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        # iPhone: no upside-down (Apple convention for handheld).
+        INFOPLIST_KEY_UISupportedInterfaceOrientations~iphone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Sean"
+
+  # ---------- Tests (logic tests — no app host) ----------
+  # Compiles Sources/Core directly rather than linking an app target, so the
+  # suite does not build SwiftTerm, AppKit, or any UI layer. Pure-logic only.
+  # Anything needing the app (AppState, editors, export) is NOT testable here
+  # by design — see state/DECISIONS.md D16/D17.
+  KitibTests:
+    type: bundle.unit-test
+    platform: macOS
+    # 14.0, not 13.0: XCTest.framework in the current Xcode is built for 14.0 and
+    # linking it at 13.0 emits warnings. Test-only — the shipping app targets stay
+    # at 13.0 (D13).
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/Core
+      - path: Tests/KitibTests
+      # Fixtures are COPIED INTO THE TEST BUNDLE as a folder reference, not read
+      # from the repo at runtime. The repo sits under ~/Documents, which macOS
+      # protects with TCC, and the xctest runner does not inherit the terminal's
+      # permission — so reading fixtures from the source tree failed with
+      # NSCocoaErrorDomain 257 for every file (D28). The built bundle lives in
+      # DerivedData under ~/Library, which TCC does not gate.
+      - path: Tests/Fixtures/paste-healing
+        type: folder
+        buildPhase: resources
+      - path: Tests/Fixtures/golden-documents
+        type: folder
+        buildPhase: resources
+      - path: Tests/Fixtures/uuid-injection
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: KitibTests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  KitibTests:
+    build:
+      targets:
+        KitibTests: [test]
+    test:
+      targets:
+        - KitibTests
+      gatherCoverageData: false

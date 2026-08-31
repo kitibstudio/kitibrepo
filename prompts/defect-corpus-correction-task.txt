@@ -1,0 +1,118 @@
+You are running UNATTENDED. No human will answer questions. Behave accordingly:
+when you would normally ask, you STOP instead — that is the safe action, and a
+stopped run is a successful outcome, not a failure.
+
+PRECEDENCE: Drift protection outranks improvement. Always. If you are unsure
+whether you may change something, you may not. Ambiguity resolves toward MORE
+restriction, never less.
+
+═══ YOUR TASK IS NOT THE ONE IN state/CURRENT.md ═══
+CURRENT.md names golden-roundtrip.sh. That is the task AFTER this one. Your task
+is a CORRECTION to your own previous pass (commit 53849dd, "Make defect-corpus.sh
+a real gate"). Do this task, then leave CURRENT.md naming golden-roundtrip.sh as
+it does now, with any gotchas you find appended.
+
+You may modify: scripts/defect-corpus.sh, Tests/Fixtures/defect-corpus/.
+You may NOT modify: scripts/validate.sh, scripts/golden-roundtrip.sh, any Swift
+file, any test, and anything under Tests/Fixtures/paste-healing/.
+
+═══ READ FIRST ═══
+CLAUDE.md, state/DECISIONS.md (D19 and D26 especially), state/REJECTED.md,
+state/PARKED.md, state/FEATURES.md, and scripts/defect-corpus.sh.
+Do not survey the rest of the codebase.
+
+═══ FINDING 1 — YOUR "CLEAN CORPUS → EXIT 0" PROOF MAY HAVE READ NOTHING ═══
+Your commit reports "Clean fixture corpus → exit 0 ✓". Scan mode globs
+"$DEFECT_DIR"/*.md and "$DEFECT_DIR"/*.txt, which does NOT recurse. The clean
+corpus keeps its files one level down — Tests/Fixtures/paste-healing/data-sheet/
+input.txt and so on — so that glob may have matched ZERO files, taken the
+"(no .md/.txt files to check)" branch, and exited 0 having read nothing.
+
+STEP 1, before changing anything, settle it:
+
+  ./scripts/defect-corpus.sh Tests/Fixtures/paste-healing; echo "exit=$?"
+  ./scripts/defect-corpus.sh Tests/Fixtures/paste-healing/data-sheet; echo "exit=$?"
+
+Paste BOTH outputs verbatim into your commit message. If the first prints
+"(no .md/.txt files to check)", your verification proved nothing and you must say
+so plainly in the commit message. That is not a disgrace — it is the D19 failure
+(a run that exercises nothing still exits 0), and catching it is the job.
+
+Then fix scan mode:
+1. It must find files RECURSIVELY (e.g. `find "$DEFECT_DIR" -type f \( -name
+   '*.md' -o -name '*.txt' \)`), or accept a single file path as its argument.
+2. It must PRINT THE NUMBER OF FILES SCANNED, every run, in both modes.
+3. A scan that finds ZERO files must exit NON-ZERO, never 0. "Nothing to check"
+   is a broken invocation, not a clean corpus. This is the whole lesson of D19
+   and it is the single most important line of this task.
+4. Re-run the both-directions proof honestly and paste the real output.
+
+If the clean fixture corpus now TRIPS one of your three checks, that is a false
+positive in the CHECK. Fix the check. Do NOT edit anything under
+Tests/Fixtures/paste-healing/ — that corpus is golden and is not yours to change.
+
+═══ FINDING 2 — DEBRIS IN THE DEFECT CORPUS ═══
+Tests/Fixtures/defect-corpus/ currently contains, besides the three real defects:
+  _scratch/stripped-clause.md   — COMMITTED to git in 53849dd
+  __v/                          — untracked leftover, three files
+  __verify.md                   — untracked leftover
+All the defect files are mode 600.
+
+1. Delete all six leftover files and both leftover directories, and `git rm` the
+   tracked one. Verify with `git status --short Tests/Fixtures/defect-corpus/`
+   that nothing but the three defect files remains.
+2. `chmod 644` every file in Tests/Fixtures/defect-corpus/. This repo already had
+   to normalise 600 → 644 once; mode 600 under ~/Documents is how the suite
+   produced dozens of fake "test failures" that were really TCC denials (D28).
+3. Add a guard to gate mode so this cannot recur silently: gate mode must FAIL if
+   Tests/Fixtures/defect-corpus/ contains anything other than the three expected
+   defect files. The golden corpus has exactly this guard already
+   (CorpusTests asserts the directories on disk match FixtureCorpus.names), and
+   REJECTED.md records why: stray corpus files survive a clean `git status` and
+   are caught no other way.
+
+═══ CHANGE AUTHORITY ═══
+GREEN  — internal implementation only; same interface, same acceptance criteria,
+         same files → proceed, note the deviation in the commit message.
+AMBER  — changes acceptance criteria, changes a public interface, or adds a
+         dependency → STOP. Write to PARKED.md. Commit what is already green.
+RED    — contradicts DECISIONS.md, changes the data model or file format, touches
+         sync, or affects another feature → STOP. Write to PARKED.md.
+UNSURE — treat as RED.
+
+═══ NEVER ═══
+- Never weaken, skip, or delete a test or validator to make something pass.
+- Never call PasteHealer or any Swift code from the gate (D26). Reading
+  ProtectedCompounds.swift as TEXT to extract the lexicon is fine and is what you
+  already do; executing the implementation is not.
+- Never edit project.pbxproj, .xcodeproj, .xcworkspace, Info.plist,
+  .entitlements, or Package.swift dependencies. That is RED — park and stop.
+- This task needs no .swift file. If you are writing one, you have drifted.
+
+═══ THE BASELINE MUST NOT MOVE ═══
+  export DEVELOPER_DIR="/Volumes/Samsung 990 2TB/Applications/Xcode.app/Contents/Developer"
+  xcodebuild test -project Kitib.xcodeproj -scheme KitibTests \
+    -destination 'platform=macOS,arch=arm64'
+
+121 tests, 0 failures, and ./scripts/validate.sh exit 0 — before and after. Never
+add -quiet: it hides the executed-test count. You are changing no Swift, so any
+movement in that number means you broke something. Xcode is on an external
+volume; if it is unmounted, testing is impossible — stop and say so rather than
+skipping the gate.
+
+═══ BEFORE YOU EXIT — MANDATORY ═══
+1. state/FEATURES.md — the defect-corpus.sh entry currently claims "Verified red
+   on all three individually and green on clean corpus". Correct it to what you
+   actually proved this session. If the original claim was vacuous, say so.
+2. Append any ruling to state/DECISIONS.md — in particular, if you add the
+   "a scan of zero files exits non-zero" rule, record it as a decision so nobody
+   softens it later.
+3. Append any rejected approach to state/REJECTED.md.
+4. Append any deferred idea to state/PARKED.md.
+5. state/CURRENT.md keeps naming golden-roundtrip.sh as the next task. Append any
+   gotchas you found. Do not replace the task.
+6. git commit. The message must contain the VERBATIM before-and-after output of
+   the two commands in STEP 1. A claim without its output is not a verification.
+
+If you cannot complete this, write what you learned into CURRENT.md, commit the
+partial work as 🔨, and stop cleanly. A clean stop beats a confident guess.

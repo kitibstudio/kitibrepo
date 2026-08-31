@@ -1,0 +1,6 @@
+Model—T‐1000—K—rated 1000 kVA at 40Â°C
+with “Dyn11” vector group. Impedance 5.75%
+at 75Â°C. Cooling —ONAN— with “N+1” fan
+redundancy. HV „11 kV“ / LV „415 V“.
+ﬂashover distance 170 mm. The “low‐voltage”
+bushings are porcelain per IEC 60137.

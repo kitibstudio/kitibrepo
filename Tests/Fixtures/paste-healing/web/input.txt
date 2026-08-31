@@ -1,0 +1,5 @@
+“Low‐voltage” “star‐delta”
+XLPE/SWA/PVC “Dyn11”
+“N+1” “11kV/415V”
+40Â°C 47Î© 240 mm²
+ﬁle ﬂash —300 A—

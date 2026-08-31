@@ -1,0 +1,154 @@
+You are running UNATTENDED. No human will answer questions. Behave accordingly:
+when you would normally ask, you STOP instead — that is the safe action, and a
+stopped run is a successful outcome, not a failure.
+
+PRECEDENCE: Drift protection outranks improvement. Always. If you are unsure
+whether you may change something, you may not. Ambiguity resolves toward MORE
+restriction, never less.
+
+═══ THE BASELINE IS RED, AND THAT IS EXPECTED ═══
+HEAD is 125 tests with 2 failures in GoldenDocumentTests. Do not treat this as
+breakage to route around. Those two failures ARE your task: the golden documents
+caught real damage done by `dehyphenate`, recorded in state/PARKED.md under
+"2026-08-11 — golden document round-trip finding".
+
+The ONLY acceptable route to green is fixing the transform. You may not edit a
+golden document, weaken GoldenDocumentTests, or delete an assertion. If you find
+yourself doing any of those, you have taken the wrong branch — stop.
+
+═══ READ FIRST ═══
+CLAUDE.md, state/CURRENT.md, state/PARKED.md (the finding), state/DECISIONS.md
+(D30, D31 especially), state/REJECTED.md, state/FEATURES.md,
+Sources/Core/PasteHealing/Dehyphenate.swift,
+Sources/Core/PasteHealing/CommonWords.swift, and
+Tests/KitibTests/PasteHealing/DehyphenateTests.swift.
+Do not survey the rest of the codebase.
+
+═══ THE RULING YOU ARE IMPLEMENTING (human, 2026-08-11) ═══
+`dehyphenate` currently FUSES when the leading fragment is unknown. That default
+contradicts the asymmetry D30 and D31 are both built on: under-healing is visible
+and costs a keystroke, over-healing reads as correct and is wrong. An unknown
+word must take the SAFE branch, not the destructive one.
+
+The rule is inverted to require positive evidence:
+
+  Remove a hyphen ONLY IF the JOINED form is a known word.
+
+    transfor + mer  -> "transformer"     known    -> fuse
+    socket   + outlets -> "socketoutlets" unknown -> keep the hyphen
+    project  + specific -> "projectspecific" unknown -> keep the hyphen
+
+This is a human ruling and supersedes the dehyphenate clause of D31. Record it as
+a new decision that says so explicitly. Do not edit or delete D31 — DECISIONS.md
+is append-only.
+
+═══ HOW TO IMPLEMENT IT — READ THIS TWICE ═══
+The new lexicon check is an ADDITIONAL requirement, ANDed with the guards that
+already exist. It does NOT replace them. Every current guard stays exactly as it
+is: no digit anywhere in the token; no protected compound in the token; leading
+fragment at least two letters; leading fragment not an all-capitals acronym;
+following fragment starting with a lowercase letter; and the `CommonWords` check.
+
+Keeping all of them matters. Worked example: `e-mail` joins to "email", which IS
+a known word — only the two-letter minimum on the leading fragment stops it being
+fused. Drop a guard and you break a passing test.
+
+Do NOT rename, repurpose, or delete `CommonWords`. Renaming an existing entity is
+forbidden, and its meaning ("words that may lead a compound") is still true. It
+becomes a secondary guard. Add a NEW type beside it for the whole-word lexicon —
+`RejoinableWords` is the suggested name — holding words a hyphenation split may
+legitimately reconstruct.
+
+Lookup rules for the joined form:
+- Strip trailing punctuation before lookup, so "transfor-mer." resolves.
+- Case-insensitive, as `CommonWords.contains` already is.
+- If the exact word is absent and it ends in "s", try it without the "s", so a
+  plural such as "transfor-mers" resolves. Any inflection handling beyond that is
+  out of scope — a missed inflection leaves a visible hyphen, which is the safe
+  direction.
+
+Populate `RejoinableWords` with engineering and general vocabulary that a source
+PDF actually hyphenates: transformer, operator, configuration, distribution,
+protection, installation, equipment, temperature, requirements, supplementary,
+conductors, impedance, insulation, resistance, commissioning, manufacturer,
+specification, and so on. It must contain "transformer" and "operator" or the
+existing DehyphenateTests fail. Err towards a SHORTER list: a missing word leaves
+a visible hyphen, an unwanted word fuses two words silently.
+
+═══ TESTS — ADD, NEVER EDIT ═══
+Do not modify DehyphenateTests.swift or any existing test. Create a NEW file,
+Tests/KitibTests/PasteHealing/DehyphenateLexiconTests.swift, covering both
+directions of the inverted rule:
+
+- Compounds that MUST keep their hyphen, taken from the actual finding:
+  socket-outlets, project-specific, factory-fitted, Direct-on-line,
+  reduced-voltage — plus two the corpus does not contain, such as
+  vendor-supplied and pressure-tested, to show the fix is general and not five
+  words bolted on.
+- Splits that MUST still fuse: transfor-mer, opera-tor, and at least two more
+  from your lexicon.
+- Idempotence and determinism on both groups.
+
+Every existing test must still pass unchanged. If one now fails, your change is
+wrong — the inverted rule was chosen precisely because it breaks none of them.
+
+═══ THE PROOF THAT MATTERS ═══
+All five golden documents must round-trip byte for byte, and the suite must be
+125 tests or more with ZERO failures. State the before and after counts in your
+commit message. "The suite is green" without the executed-test count is not a
+verification.
+
+  xcodegen generate
+  export DEVELOPER_DIR="/Volumes/Samsung 990 2TB/Applications/Xcode.app/Contents/Developer"
+  xcodebuild test -project Kitib.xcodeproj -scheme KitibTests \
+    -destination 'platform=macOS,arch=arm64'
+
+You are creating a .swift file, so `xcodegen generate` is mandatory before
+testing (D22) — a file on disk is in no target until you regenerate, and a test
+that is not compiled cannot fail. Never add -quiet. ./scripts/validate.sh,
+./scripts/defect-corpus.sh and ./scripts/golden-roundtrip.sh must all still pass.
+
+═══ TWO DOCUMENTS NOW CARRY CLAIMS THAT WILL BE FALSE ═══
+Once the rule is inverted, fix these — they are prose corrections, not gate
+manipulation:
+1. Tests/Fixtures/golden-documents/README.md states that the corpus only uses
+   compounds whose leading fragment `CommonWords` carries, and gives a worked
+   example of a script name fusing. Both stop being true. Correct that section to
+   describe the inverted rule. The README must still round-trip, so keep to plain
+   ASCII punctuation and single-line paragraphs.
+2. state/PARKED.md carries two `CommonWords` gap notes and the round-trip
+   finding. Mark them resolved with the date and the deciding commit. Do not
+   delete them — the record of why the rule changed is the point.
+
+Do NOT touch the body text of the five golden documents themselves. Only the
+README's description of the rules may change.
+
+═══ CHANGE AUTHORITY ═══
+This task is authorised to change `dehyphenate`'s guard semantics. That is the
+whole point of it. Everything else keeps its usual tier:
+AMBER  — changes acceptance criteria, a public interface, or adds a dependency
+         → STOP, write to PARKED.md, commit what is green.
+RED    — contradicts a decision other than D31's dehyphenate clause, changes the
+         data model or file format, touches sync, or affects another feature
+         → STOP, write to PARKED.md.
+UNSURE — treat as RED.
+
+A spell-checker or NaturalLanguage dependency is REJECTED.md, not an option.
+Never edit project.pbxproj, .xcodeproj, .xcworkspace, Info.plist, .entitlements,
+or Package.swift. No project.yml change is authorised for this task.
+
+═══ BEFORE YOU EXIT — MANDATORY ═══
+1. state/DECISIONS.md — append the new decision: the inverted rule, that it
+   supersedes D31's dehyphenate clause by human ruling on 2026-08-11, and the
+   reasoning (unknown input must take the safe branch). Append, never edit.
+2. state/FEATURES.md — update the dehyphenate and CommonWords entries, add
+   RejoinableWords, and record the new test count.
+3. state/REJECTED.md — record that growing `CommonWords` word by word was
+   considered and rejected as whack-a-mole, with each miss silent.
+4. state/PARKED.md — resolve the notes named above.
+5. REWRITE state/CURRENT.md with the NEXT task and every gotcha you found.
+6. git commit, with before/after test counts and the golden round-trip result.
+
+If you cannot complete this, write what you learned into CURRENT.md, commit only
+what is green, and stop cleanly. Leaving the suite red with an accurate PARKED.md
+entry is a better outcome than a green suite bought by weakening a test.

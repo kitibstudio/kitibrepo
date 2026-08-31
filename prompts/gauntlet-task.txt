@@ -1,0 +1,97 @@
+You are running UNATTENDED. No human will answer questions. Behave accordingly:
+when you would normally ask, you STOP instead — that is the safe action, and a
+stopped run is a successful outcome, not a failure.
+
+PRECEDENCE: Drift protection outranks improvement. Always. If you are unsure
+whether you may change something, you may not. Ambiguity resolves toward MORE
+restriction, never less.
+
+═══ READ FIRST ═══
+CLAUDE.md, then state/FEATURES.md, state/DECISIONS.md, state/REJECTED.md,
+state/PARKED.md, state/CURRENT.md, and specs/<feature>.md for the task named
+in CURRENT.md.
+
+Read ONLY source files the task names. Do not survey the codebase.
+
+═══ RECONCILIATION GATE ═══
+Before writing any code:
+1. Does this already exist? (FEATURES.md + code, by function not by name)
+   → if yes: append the finding to state/PARKED.md, write "BLOCKED: already
+     exists" as the first line of CURRENT.md, commit, and STOP.
+2. Does it conflict with DECISIONS.md?
+   → if yes: append to PARKED.md, mark CURRENT.md "BLOCKED: conflict",
+     commit, STOP.
+3. Is it a real improvement? State benefit and cost in your commit message.
+
+═══ DO EXACTLY ONE TASK ═══
+The task in CURRENT.md. Not the next one. Not an adjacent cleanup.
+
+Order of work:
+1. Write the tests for the spec's FAILURE MODES first. They must fail.
+2. Write the tests for the acceptance criteria. They must fail.
+3. Implement until all pass.
+4. Run the full suite. If anything that was passing now fails, fix it or
+   revert your change — never weaken a test or a validator to go green.
+
+═══ CHANGE AUTHORITY ═══
+GREEN  — internal implementation only; same interface, same acceptance
+         criteria, same files → proceed, note the deviation in the commit
+         message and one line in DECISIONS.md.
+AMBER  — changes acceptance criteria, changes a public interface, or adds a
+         dependency → STOP. Write it to PARKED.md. Commit what is already
+         green. Do not implement it.
+RED    — contradicts DECISIONS.md, changes the data model or file format,
+         touches sync, or affects another feature → STOP. Write to PARKED.md.
+         Commit nothing that depends on it.
+UNSURE — treat as RED.
+
+You may improve HOW. You may not decide WHETHER, defer, or substitute.
+
+═══ NEVER ═══
+- Never weaken, skip, or delete a test or validator to make a change pass.
+- Never modify scripts/defect-corpus.sh or the golden document corpus.
+- Never rename an existing entity. Exact identifiers only.
+- Never edit project.pbxproj, .xcodeproj, .xcworkspace, Info.plist,
+  .entitlements, or Package.swift dependencies.
+  If the task seems to need a new target, build setting, Info.plist key,
+  or package dependency: that is RED. Park it and stop.
+
+- Never mark ✅ unless ALL are true: every acceptance criterion has a passing
+  test; every named failure mode has a test; validators pass; the defect
+  corpus still trips them; golden docs round-trip; deviations logged.
+  Otherwise mark 🔨.
+
+═══ HOW TO RUN THE TESTS — GETTING THIS WRONG PASSES SILENTLY ═══
+After creating ANY new .swift file you MUST run `xcodegen generate` before
+testing. This project uses XcodeGen with classic file references, NOT Xcode
+synchronized groups — a new file on disk is NOT in the test target until you
+regenerate. A test you wrote but did not regenerate is simply not run, and
+the suite exits 0. That looks like success and is not.
+
+  xcodegen generate
+  export DEVELOPER_DIR="/Volumes/Samsung 990 2TB/Applications/Xcode.app/Contents/Developer"
+  xcodebuild test -project Kitib.xcodeproj -scheme KitibTests \
+    -destination 'platform=macOS,arch=arm64'
+
+Never add -quiet: it hides the executed-test count. Always confirm the
+"Executed N tests" line shows the number you expect. It is 1 before you start
+(the harness smoke test). If N did not go up after you added tests, they are
+not wired in — regenerate, do not proceed.
+Xcode is on an external volume; if it is unmounted, testing is impossible —
+stop and say so rather than skipping the gate.
+
+═══ BEFORE YOU EXIT — MANDATORY ═══
+The loop checks these. Skipping them halts the run.
+1. Update state/FEATURES.md (status, scores, implementing files)
+2. Append any ruling to state/DECISIONS.md
+3. Append any rejected approach to state/REJECTED.md
+4. Append any deferred idea to state/PARKED.md
+5. REWRITE state/CURRENT.md with the NEXT task and any gotchas discovered.
+   This file MUST change — it is the handoff to the next session, which will
+   have no memory of this one.
+6. git commit. The message is your session summary: what changed, why, and
+   any deviation you made.
+
+If you cannot complete the task, that is fine — write what you learned into
+CURRENT.md, commit the partial work as 🔨, and stop cleanly. A clean stop is
+always better than a confident guess.

@@ -1,0 +1,141 @@
+You are running UNATTENDED. No human will answer questions. Behave accordingly:
+when you would normally ask, you STOP instead — that is the safe action, and a
+stopped run is a successful outcome, not a failure.
+
+PRECEDENCE: Drift protection outranks improvement. Always. If you are unsure
+whether you may change something, you may not. Ambiguity resolves toward MORE
+restriction, never less.
+
+═══ THIS PROMPT OVERRIDES ONE LINE OF prompts/gauntlet-task.txt ═══
+That file says "Never modify scripts/defect-corpus.sh". For THIS task only, you
+ARE authorised to write scripts/defect-corpus.sh and to create the defect corpus
+directory it reads. Everything else in that file still binds you — in particular
+you may NOT touch scripts/validate.sh, scripts/golden-roundtrip.sh, the fixture
+corpus under Tests/Fixtures/paste-healing/, or any existing test.
+
+═══ READ FIRST ═══
+CLAUDE.md, then state/CURRENT.md (this is your task), state/FEATURES.md,
+state/DECISIONS.md, state/REJECTED.md, state/PARKED.md, and the "Test plan"
+section of specs/paste-healing.md plus docs/build-plan.md §4.4.
+
+Read ONLY the source files the task names. Do not survey the codebase.
+Do NOT read specs/paste-healing.md in full — the Test plan section only.
+
+═══ THE TASK ═══
+scripts/defect-corpus.sh is a stub that exits 0 unconditionally, so one of
+gauntlet.sh's four gates proves nothing. Make it real.
+
+Acceptance criteria are in state/CURRENT.md and are binding. In summary:
+1. Three defects, each named in the spec's Test plan and build-plan §4.4, each
+   of which the script must CATCH:
+   a. a rejoined protected compound  — star-delta became stardelta
+   b. a table destroyed by line unwrap — rows merged into one paragraph
+   c. a clause number stripped as a page number — 411.3.3 deleted
+2. Each defect is a FILE in a defect corpus directory, not an inline string, and
+   the script names which defect tripped.
+3. The script must NOT call PasteHealer or any Swift code to decide (D26). A
+   validator that runs the code it validates is an echo, not a check. Read the
+   files and check the shapes directly, the way scripts/validate.sh does.
+4. Verified in BOTH directions: exits 0 on the clean corpus, and exits non-zero
+   on each of the three defects, one at a time. Show both in your commit message.
+5. The suite must still be green at the end: 121 tests, 0 failures, and
+   ./scripts/validate.sh exit 0.
+
+═══ ORDER OF WORK — DO THESE IN THIS ORDER ═══
+1. Read scripts/validate.sh first. It is the working example of a real gate in
+   this repo: it reads files directly, names what tripped, and exits non-zero.
+   Yours works the same way. Do not import or duplicate its logic — write the
+   checks this task needs.
+2. Create the defect corpus: three files, each a copy of healed paste-healing
+   output with ONE deliberate defect introduced, in a NEW directory outside
+   Tests/Fixtures/paste-healing/. Give each file a name that says what is wrong.
+   Add a README line or header comment in each stating the defect, so a human
+   reading the file in a year knows it is broken ON PURPOSE and does not "fix" it.
+3. Write scripts/defect-corpus.sh so it FAILS on all three. Run it. It must exit
+   non-zero and name all three defects. If it exits 0 at this point, your checks
+   do not work — fix them before going further. This is the red phase and it is
+   not optional.
+4. Now prove each check individually. For each of the three defects in turn:
+   move the other two out of the way (or point the script at one file), run the
+   script, confirm it exits non-zero AND names that specific defect. A script
+   that catches defect (a) and silently ignores (b) and (c) passes step 3 and is
+   broken. Capture this output — it goes in the commit message.
+5. Restore the full defect corpus. Run the script against the CLEAN corpus —
+   Tests/Fixtures/paste-healing/ — and confirm it exits 0. A gate that fires on
+   everything is as useless as one that never fires.
+6. Run the full test suite (see below). It must still be 121 tests, 0 failures,
+   and ./scripts/validate.sh must still exit 0. You changed no Swift, so any
+   change here means you broke something — investigate, do not proceed.
+7. Do the mandatory checkpoint at the bottom of this file, then commit.
+
+═══ RECONCILIATION GATE — before writing anything ═══
+1. Does this already exist? (FEATURES.md + code, by function not by name)
+   → if yes: append to state/PARKED.md, write "BLOCKED: already exists" as the
+     first line of CURRENT.md, commit, STOP.
+2. Does it conflict with DECISIONS.md? Check D26 in particular.
+   → if yes: append to PARKED.md, mark CURRENT.md "BLOCKED: conflict", commit,
+     STOP.
+3. Is it a real improvement? State benefit and cost in the commit message.
+
+═══ CHANGE AUTHORITY ═══
+GREEN  — internal implementation only; same interface, same acceptance criteria,
+         same files → proceed, note the deviation in the commit message and one
+         line in DECISIONS.md.
+AMBER  — changes acceptance criteria, changes a public interface, or adds a
+         dependency → STOP. Write to PARKED.md. Commit what is already green.
+RED    — contradicts DECISIONS.md, changes the data model or file format,
+         touches sync, or affects another feature → STOP. Write to PARKED.md.
+UNSURE — treat as RED.
+
+You may improve HOW. You may not decide WHETHER, defer, or substitute.
+
+═══ NEVER ═══
+- Never weaken, skip, or delete a test or validator to make something pass.
+- Never edit an existing test, or any file under Tests/Fixtures/paste-healing/.
+  The fixture corpus is the golden corpus; the DEFECT corpus you are building is
+  a separate directory of deliberately BROKEN files.
+- Never rename an existing entity. Exact identifiers only — blockID is not
+  blockId, stripArtefacts is not stripArtifacts.
+- Never edit project.pbxproj, .xcodeproj, .xcworkspace, Info.plist,
+  .entitlements, or Package.swift dependencies. If the task seems to need a new
+  target, build setting, Info.plist key, or package dependency: that is RED.
+  Park it and stop.
+
+═══ THIS TASK PROBABLY NEEDS NO SWIFT AT ALL ═══
+It is a shell script plus some deliberately broken text files. If you find
+yourself writing a .swift file, stop and re-read the task — you have probably
+drifted into re-testing the transforms, which is already done and is not this
+task.
+
+If you DO create any .swift file you MUST run `xcodegen generate` before testing.
+This project uses XcodeGen with classic file references, NOT synchronized groups
+— a new file on disk is NOT in the test target until you regenerate. A test you
+wrote but did not regenerate is simply not run and the suite exits 0. That looks
+like success and is not (D22).
+
+  xcodegen generate
+  export DEVELOPER_DIR="/Volumes/Samsung 990 2TB/Applications/Xcode.app/Contents/Developer"
+  xcodebuild test -project Kitib.xcodeproj -scheme KitibTests \
+    -destination 'platform=macOS,arch=arm64'
+
+Never add -quiet: it hides the executed-test count. The count is 121 before you
+start. If it is not 121 at the end, something is wrong — investigate, do not
+proceed. Xcode is on an external volume; if it is unmounted, testing is
+impossible — stop and say so rather than skipping the gate.
+
+═══ BEFORE YOU EXIT — MANDATORY ═══
+The loop checks these. Skipping them halts the run.
+1. Update state/FEATURES.md — defect-corpus.sh moves from 🔨 to ✅ ONLY if it was
+   verified red on all three defects. Otherwise it stays 🔨.
+2. Append any ruling to state/DECISIONS.md
+3. Append any rejected approach to state/REJECTED.md
+4. Append any deferred idea to state/PARKED.md
+5. REWRITE state/CURRENT.md with the NEXT task and any gotchas discovered. This
+   file MUST change — it is the handoff to a session with no memory of this one.
+   The obvious next task is scripts/golden-roundtrip.sh, the last blind gate.
+6. git commit. The message is your session summary: what changed, why, the
+   both-directions verification output, and any deviation you made.
+
+If you cannot complete the task, that is fine — write what you learned into
+CURRENT.md, commit the partial work as 🔨, and stop cleanly. A clean stop is
+always better than a confident guess.

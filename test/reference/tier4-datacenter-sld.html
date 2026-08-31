@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tier 4 Data Center SLD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --paper:#FAFAF7; --panel:#FFFFFF; --ink:#1B1F23; --ink-soft:#5B6470;
+    --rule:#DEDBD3; --blueprint:#2B4C7E; --blueprint-soft:#E7ECF3;
+    --amber:#B5720F; --amber-soft:#F6ECDA; --green:#3E7C4A;
+    --mono:'JetBrains Mono', ui-monospace, monospace; --sans:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);padding:32px 20px 60px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  header{margin-bottom:28px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--blueprint);margin-bottom:8px;}
+  h1{font-size:22px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em;}
+  .sub{color:var(--ink-soft);font-size:14px;line-height:1.5;max-width:660px;}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .chip{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:3px;background:var(--blueprint-soft);color:var(--blueprint);border:1px solid rgba(43,76,126,0.15);}
+  .chip.amber{background:var(--amber-soft);color:var(--amber);border-color:rgba(181,114,15,0.2);}
+  .panes{display:grid;grid-template-columns:1fr 1.15fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-top:24px;}
+  @media (max-width:900px){.panes{grid-template-columns:1fr;}}
+  .pane{background:var(--panel);}
+  .pane-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--rule);}
+  .pane-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);}
+  .pane-tag{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);}
+  .code{font-family:var(--mono);font-size:11.5px;line-height:1.65;padding:18px 16px;overflow-x:auto;white-space:pre;color:var(--ink);}
+  .code .kw{color:var(--blueprint);}
+  .code .str{color:var(--green);}
+  .code .cm{color:var(--ink-soft);font-style:italic;}
+  .code .fn{color:var(--amber);}
+  .code .fm{color:#8A2A8A;}
+  .render{padding:20px 16px 8px;display:flex;flex-direction:column;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .render svg{width:420px;max-width:none;height:auto;display:block;flex-shrink:0;}
+  .caption{padding:12px 16px 16px;font-size:11.5px;color:var(--ink-soft);font-family:var(--mono);text-align:center;}
+  .tier-note{margin-top:18px;padding:14px 16px;background:var(--amber-soft);border:1px solid rgba(181,114,15,0.2);border-radius:6px;font-size:13px;line-height:1.6;color:var(--ink);}
+  .tier-note b{color:var(--amber);}
+  .compare{margin-top:14px;padding:14px 16px;background:var(--blueprint-soft);border:1px solid rgba(43,76,126,0.15);border-radius:6px;font-size:13px;line-height:1.6;color:var(--ink);}
+  .compare b{color:var(--blueprint);}
+  .ladder{margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media (max-width:700px){.ladder{grid-template-columns:1fr 1fr;}}
+  .tstep{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:10px 12px;font-size:11.5px;line-height:1.5;}
+  .tstep b{display:block;font-family:var(--mono);font-size:11px;color:var(--blueprint);margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">§4.9 — SLD Symbol Library, Uptime Tiers Continued</div>
+    <h1>Tier 4 — no shared device, anywhere</h1>
+    <p class="sub">Tier 3's STS1 was the one thing Path A and Path B still had in common — a single box that both merges into. Tier 4 removes it: both paths stay fully separate all the way to two independent panels, and it's the <em>load itself</em> that's dual-corded, drawing from both simultaneously with no switching device between them.</p>
+    <div class="meta">
+      <span class="chip">template: tier4-data-center</span>
+      <span class="chip amber">topology: 2 independent paths → dual-corded load, no merge</span>
+    </div>
+  </header>
+
+  <div class="panes">
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-label">Raw — document source</span>
+        <span class="pane-tag">tier4-power.md</span>
+      </div>
+      <div class="code"><span class="kw">---</span>
+<span class="fm">template:</span> tier4-data-center
+<span class="fm">units:</span> metric
+<span class="kw">---</span>
+
+<span class="cm">&lt;!-- Path A — fully independent, terminates in its own panel --&gt;</span>
+<span class="kw">```sld</span>
+<span class="fn">source</span> <span class="str">"Utility A"</span> --&gt; <span class="fn">breaker</span> Q1A <span class="str">"1600AF"</span> --&gt; ATSA
+<span class="fn">generator</span> GA <span class="str">"750kW Standby A"</span>
+<span class="fn">ats</span> ATSA
+GA --&gt; ATSA
+ATSA --&gt; <span class="fn">busbar</span> B1A <span class="str">"1600A"</span>
+B1A --&gt; <span class="fn">breaker</span> Q2A <span class="str">"800AF"</span> --&gt; <span class="fn">ups</span> UPSA <span class="str">"500kVA (A)"</span>
+UPSA --&gt; <span class="fn">breaker</span> Q3A <span class="str">"400AF"</span> --&gt; <span class="fn">panel</span> <span class="str">"PDU-1A"</span>
+
+<span class="cm">&lt;!-- Path B — separate down to its own panel, no shared node with A --&gt;</span>
+<span class="fn">source</span> <span class="str">"Utility B"</span> --&gt; <span class="fn">breaker</span> Q1B <span class="str">"1600AF"</span> --&gt; ATSB
+<span class="fn">generator</span> GB <span class="str">"750kW Standby B"</span>
+<span class="fn">ats</span> ATSB
+GB --&gt; ATSB
+ATSB --&gt; <span class="fn">busbar</span> B1B <span class="str">"1600A"</span>
+B1B --&gt; <span class="fn">breaker</span> Q2B <span class="str">"800AF"</span> --&gt; <span class="fn">ups</span> UPSB <span class="str">"500kVA (B)"</span>
+UPSB --&gt; <span class="fn">breaker</span> Q3B <span class="str">"400AF"</span> --&gt; <span class="fn">panel</span> <span class="str">"PDU-1B"</span>
+
+<span class="cm">// No STS, no shared busbar — the rack itself is dual-corded</span>
+<span class="cm">// and draws from both panels at once. Either path can fault</span>
+<span class="cm">// or be pulled for maintenance with zero interruption, because</span>
+<span class="cm">// there was never a moment the load depended on one device.</span>
+<span class="fn">load</span> <span class="str">"IT Load (Dual-Corded)"</span>
+PDU-1A --&gt; load
+PDU-1B --&gt; load
+<span class="kw">```</span></div>
+    </div>
+
+    <div class="pane">
+      <div class="pane-head">
+        <span class="pane-label">Rendered — IEC 60617</span>
+        <span class="pane-tag">preview</span>
+      </div>
+      <div class="render">
+        <svg viewBox="0 0 460 400" width="420">
+
+          <!-- ============ PATH A ============ -->
+          <text x="50" y="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5B6470">Utility A</text>
+          <line x1="50" y1="20" x2="50" y2="38" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="35" y="38" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="39" y1="42" x2="61" y2="58" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="2" y="53" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q1A</text>
+          <line x1="50" y1="62" x2="50" y2="85" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <text x="130" y="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5B6470">Standby A</text>
+          <circle cx="130" cy="28" r="12" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <path d="M121,28 Q125,21 130,28 T139,28" fill="none" stroke="#1B1F23" stroke-width="1.1"/>
+          <text x="145" y="32" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">GA</text>
+          <line x1="130" y1="40" x2="130" y2="85" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <line x1="50" y1="85" x2="75" y2="97" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="130" y1="85" x2="105" y2="97" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="70" y="92" width="40" height="20" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="75" y1="110" x2="105" y2="94" stroke="#1B1F23" stroke-width="1.2"/>
+          <circle cx="75" cy="110" r="1.6" fill="#1B1F23"/>
+          <circle cx="105" cy="94" r="1.6" fill="#1B1F23"/>
+          <text x="113" y="105" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#5B6470">ATSA</text>
+          <line x1="90" y1="112" x2="90" y2="130" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <line x1="50" y1="130" x2="130" y2="130" stroke="#1B1F23" stroke-width="3"/>
+          <text x="4" y="134" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">B1A</text>
+
+          <line x1="90" y1="130" x2="90" y2="148" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="75" y="148" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="79" y1="152" x2="101" y2="168" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="112" y="163" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q2A</text>
+
+          <line x1="90" y1="172" x2="90" y2="190" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="65" y="190" width="50" height="30" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="90" y="206" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7.5" font-weight="600" fill="#2B4C7E">UPSA</text>
+          <text x="90" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#5B6470">500kVA (A)</text>
+
+          <line x1="90" y1="220" x2="90" y2="238" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="75" y="238" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="79" y1="242" x2="101" y2="258" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="112" y="253" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q3A</text>
+
+          <line x1="90" y1="262" x2="90" y2="280" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="60" y="280" width="60" height="30" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="90" y="299" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="600" fill="#1B1F23">PDU-1A</text>
+
+          <!-- ============ PATH B (offset +220) ============ -->
+          <text x="270" y="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5B6470">Utility B</text>
+          <line x1="270" y1="20" x2="270" y2="38" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="255" y="38" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="259" y1="42" x2="281" y2="58" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="222" y="53" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q1B</text>
+          <line x1="270" y1="62" x2="270" y2="85" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <text x="350" y="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#5B6470">Standby B</text>
+          <circle cx="350" cy="28" r="12" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <path d="M341,28 Q345,21 350,28 T359,28" fill="none" stroke="#1B1F23" stroke-width="1.1"/>
+          <text x="365" y="32" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">GB</text>
+          <line x1="350" y1="40" x2="350" y2="85" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <line x1="270" y1="85" x2="295" y2="97" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="350" y1="85" x2="325" y2="97" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="290" y="92" width="40" height="20" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="295" y1="110" x2="325" y2="94" stroke="#1B1F23" stroke-width="1.2"/>
+          <circle cx="295" cy="110" r="1.6" fill="#1B1F23"/>
+          <circle cx="325" cy="94" r="1.6" fill="#1B1F23"/>
+          <text x="333" y="105" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#5B6470">ATSB</text>
+          <line x1="310" y1="112" x2="310" y2="130" stroke="#1B1F23" stroke-width="1.3"/>
+
+          <line x1="270" y1="130" x2="350" y2="130" stroke="#1B1F23" stroke-width="3"/>
+          <text x="352" y="134" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">B1B</text>
+
+          <line x1="310" y1="130" x2="310" y2="148" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="295" y="148" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="299" y1="152" x2="321" y2="168" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="332" y="163" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q2B</text>
+
+          <line x1="310" y1="172" x2="310" y2="190" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="285" y="190" width="50" height="30" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="310" y="206" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7.5" font-weight="600" fill="#2B4C7E">UPSB</text>
+          <text x="310" y="216" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="6.5" fill="#5B6470">500kVA (B)</text>
+
+          <line x1="310" y1="220" x2="310" y2="238" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="295" y="238" width="30" height="24" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <line x1="299" y1="242" x2="321" y2="258" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="332" y="253" font-family="JetBrains Mono, monospace" font-size="7.5" fill="#2B4C7E">Q3B</text>
+
+          <line x1="310" y1="262" x2="310" y2="280" stroke="#1B1F23" stroke-width="1.3"/>
+          <rect x="280" y="280" width="60" height="30" fill="none" stroke="#1B1F23" stroke-width="1.3"/>
+          <text x="310" y="299" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="600" fill="#1B1F23">PDU-1B</text>
+
+          <!-- ============ dual-corded load — no merge device ============ -->
+          <line x1="90" y1="310" x2="160" y2="340" stroke="#1B1F23" stroke-width="1.5"/>
+          <line x1="310" y1="310" x2="240" y2="340" stroke="#1B1F23" stroke-width="1.5"/>
+          <rect x="140" y="340" width="120" height="40" fill="none" stroke="#1B1F23" stroke-width="1.6"/>
+          <text x="200" y="357" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#1B1F23">IT LOAD</text>
+          <text x="200" y="370" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="7" fill="#5B6470">dual-corded — A + B live</text>
+        </svg>
+      </div>
+      <div class="caption">Two independent lines land on two independent points of the load — no box for both to pass through, nothing to fault</div>
+    </div>
+  </div>
+
+  <div class="tier-note">
+    <b>The tell: count the boxes both lines pass through.</b> In Tier 3, trace either UPS output forward and both eventually enter STS1 — one box, shared. In Tier 4, trace UPSA's output forward and it never touches anything UPSB's output also touches; they land on two separate terminals of the load itself. That's the structural definition of fault tolerant: not "redundant everywhere" in the abstract, but zero shared components between the two paths, full stop — including the switching device.
+  </div>
+
+  <div class="compare">
+    <b>One more distinction worth being precise about:</b> Tier 3's STS actively selects a source — only one path is "live" to the load at a time, switching on demand. Tier 4 needs both paths <em>simultaneously</em> live, because a switching decision is itself a place a fault-tolerant system can't afford to depend on. That's why the diagram shows two lines into the load rather than one line out of a switch — it's not a drawing simplification, it's the actual difference between "recovers from an unplanned fault instantly" and "recovers from a planned outage cleanly."
+  </div>
+
+  <div class="ladder">
+    <div class="tstep"><b>Tier 1</b>N capacity. Single path throughout. Any maintenance drops the load.</div>
+    <div class="tstep"><b>Tier 2</b>N+1 UPS on one shared bus. Component maintenance is safer; the bus and everything upstream is still a single point.</div>
+    <div class="tstep"><b>Tier 3</b>Two independent chains, merged at one STS. Planned maintenance on either full chain: zero impact. STS itself is still one device.</div>
+    <div class="tstep"><b>Tier 4</b>Two independent chains, no merge device — dual-corded load. Survives an unplanned fault anywhere in either chain, not just planned work.</div>
+  </div>
+
+</div>
+</body>
+</html>
