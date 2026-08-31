@@ -84,6 +84,11 @@ targets:
     sources:
       - path: Sources/Core
       - path: Tests/KitibTests
+        # The rules fixtures are a folder reference (below); excluding them
+        # here stops the sources glob from ALSO copying each .md as an
+        # individual resource, which would duplicate bundle outputs.
+        excludes:
+          - Rules/Fixtures/**
       # Fixtures are COPIED INTO THE TEST BUNDLE as a folder reference, not read
       # from the repo at runtime. The repo sits under ~/Documents, which macOS
       # protects with TCC, and the xctest runner does not inherit the terminal's
@@ -97,6 +102,11 @@ targets:
         type: folder
         buildPhase: resources
       - path: Tests/Fixtures/uuid-injection
+        type: folder
+        buildPhase: resources
+      # Rules fixtures (specs/rules-engine.md: Tests/KitibTests/Rules/Fixtures).
+      # Same bundle-first treatment as the other corpora (D29).
+      - path: Tests/KitibTests/Rules/Fixtures
         type: folder
         buildPhase: resources
     settings:

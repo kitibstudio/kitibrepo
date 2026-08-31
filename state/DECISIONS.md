@@ -969,3 +969,31 @@
   extractWikiLinks likewise toggles fences on ``` ONLY, so a [[wiki-link]]
   inside a ~~~ fence IS extracted; that parser is the sole authority for
   links (spec criterion 9) and the projection carries its output unchanged.
+
+[from-code] D81: the engine replaces a diagnostic's severity ONLY when the
+  configuration has an explicit override for that ruleID (2026-08-31,
+  rules-engine Session 2). The Session-1 engine unconditionally replaced
+  severity with (override ?? rule.defaultSeverity), which flattened a rule's
+  per-diagnostic severities. ForbiddenPhraseRule needs per-phrase severities
+  (spec criterion 10: caller-supplied pattern/message/SEVERITY tuples), so
+  the engine now keeps the rule's own severity when no override is set.
+  RuleConfiguration gains severityOverride(for:) -> DiagnosticSeverity?;
+  severity(for:default:) remains for callers. No spec change: criterion 4
+  ("override any rule's severity") still holds, and the engine test for
+  overrides is unchanged and green.
+
+[from-code] D82: ForbiddenPhraseRule computes table delimiter-row exclusion
+  itself, mirroring MarkdownTableParser.isDelimiterRow (2026-08-31). The
+  tripwire authorises the projection to carry table RANGES only; the
+  delimiter predicate is MarkdownTableParser's private detail. Criterion 10
+  excludes "a table's delimiter row", so the rule re-derives delimiter rows
+  from projection.tableRanges with a local copy of the parser's predicate.
+  This is rule logic, not projection scanning: the reviewer's tripwire test
+  targets the projection's private helpers, and criterion 6 ("structure the
+  projection already carries") is not violated because the projection does
+  not carry delimiter rows. The fixture corpus keeps the two predicates in
+  sync. Also recorded: extractWikiLinks is frontmatter-blind, so a
+  [[wiki-link]] in frontmatter IS extracted and would be flagged by
+  BrokenWikiLinkRule; the exclusion-zone corpus keeps [[...]] out of
+  frontmatter for that reason (documented in the fixture README; candidate
+  for a separate LinkIndex-feature fix, see PARKED.md).

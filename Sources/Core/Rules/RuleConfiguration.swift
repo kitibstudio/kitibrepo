@@ -34,6 +34,15 @@ struct RuleConfiguration: Equatable {
         !disabledRules.contains(ruleID)
     }
 
+    /// The configured override for the named rule, or nil when none is set.
+    /// The engine replaces a rule's emitted severities ONLY when this returns
+    /// a value (D81): without an override, a rule's own per-diagnostic
+    /// severities stand, which is what criterion 10's per-phrase severity
+    /// depends on.
+    func severityOverride(for ruleID: String) -> DiagnosticSeverity? {
+        severityOverrides[ruleID]
+    }
+
     /// The severity the named rule's diagnostics are emitted with:
     /// the override when one is set, otherwise `defaultSeverity`.
     func severity(for ruleID: String, default defaultSeverity: DiagnosticSeverity) -> DiagnosticSeverity {

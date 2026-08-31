@@ -140,4 +140,17 @@ final class RuleEngineTests: XCTestCase {
         let result = RuleEngine.run(rules: [rule], on: projection)
         XCTAssertEqual(result.count, 1)
     }
+
+    /// D81: without a configuration override, a rule's own per-diagnostic
+    /// severities stand. ForbiddenPhraseRule depends on this (criterion 10
+    /// pairs severity with each phrase). The engine replaces severity ONLY
+    /// when an override exists.
+    func testNoOverrideKeepsMixedSeverities() {
+        let rule = StubRule(ruleID: "mixed", defaultSeverity: .warning, diagnostics: [
+            makeDiagnostic("mixed", at: 1, severity: .warning, in: text),
+            makeDiagnostic("mixed", at: 3, severity: .error, in: text),
+        ])
+        let result = RuleEngine.run(rules: [rule], on: projection)
+        XCTAssertEqual(result.map(\.severity), [.warning, .error])
+    }
 }

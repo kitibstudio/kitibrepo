@@ -249,3 +249,13 @@ on the launch path.
 They still apply to opening a large folder by hand — that pause is now user-
 initiated rather than unavoidable, which is a much weaker case for the RED.
 Re-raise them only if opening a real vault is measurably painful.
+
+## extractWikiLinks is frontmatter-blind (2026-08-31, rules-engine Session 2)
+
+`extractWikiLinks` excludes fenced code and inline backticks but NOT the
+frontmatter block, so a `[[wiki-link]]` inside frontmatter is extracted and
+would be flagged by BrokenWikiLinkRule. The exclusion-zone corpus therefore
+keeps `[[...]]` out of frontmatter (documented in the fixture README). The
+fix is a change to the LinkIndex feature's parser (adjacent feature, not the
+rules engine), so it is parked rather than implemented here. Re-raise when
+link work is next scheduled; a frontmatter-aware link scanner is the shape.

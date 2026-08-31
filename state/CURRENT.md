@@ -1,53 +1,54 @@
 # CURRENT.md: the single active task. Rewritten each session. Cap: 40 lines.
 
-## THIS SESSION: rules engine Session 1 of 2 (engine spine) (2026-08-31)
+## THIS SESSION: rules engine Session 2 of 2 (the four rules) (2026-08-31)
 
-"GO WITH SESSION 1" confirmed the split proposed at the end of the previous
-session: spine first, rules second. Built per specs/rules-engine.md (APPROVED,
-D79). All exact spec identifiers; GREEN tier, no deviation.
+CONFIRMED started Session 2. specs/rules-engine.md is now COMPLETE: all ten
+acceptance criteria implemented and tested.
 
-- Diagnostic + DiagnosticSeverity, Rule, RuleConfiguration, RuleEngine:
-  Sources/Core/Rules/ (6 files)
-- DocumentProjection.build(from:linkIndex:) runs the four authorised sources
-  once: OutlineParser, extractWikiLinks, MarkdownTableParser.findTableRange
-  (probed per pipe line, containment re-checked, D80), ExclusionSpans
-  (fences ```/~~~, inline backticks, frontmatter; the ONLY new scanning;
-  tripwire respected)
-- 52 new tests: Tests/KitibTests/Rules/ (RuleConfiguration 8, RuleEngine 14,
-  DocumentProjection 30, incl. failure modes 1/2/3/7/9 at spine level)
-- xcodegen generate + Executed-N rose 413 → 465 (D22); all 52 green;
-  Kitib-macOS app target builds; all new content em-dash-free
+- HeadingLevelJumpRule, EmptySectionRule, BrokenWikiLinkRule,
+  ForbiddenPhraseRule: Sources/Core/Rules/ (exact spec identifiers, ruleIDs
+  heading-level-jump / empty-section / broken-wiki-link / forbidden-phrase)
+- Engine fix (D81): severity replaced ONLY under an explicit configuration
+  override, so per-phrase severities survive (criterion 10)
+- ForbiddenPhraseRule mirrors MarkdownTableParser.isDelimiterRow for
+  delimiter-row exclusion (D82, tripwire respected)
+- Fixtures: Tests/KitibTests/Rules/Fixtures/ (9 + README), bundled as folder
+  reference; Tests/KitibTests sources entry excludes Rules/Fixtures to avoid
+  duplicate resource copies
+- 49 new tests (corpus 5, heading-jump 8, empty-section 10, broken-link 8,
+  forbidden 14, golden 3, engine +1). Suite: 514 tests; Executed-N rose
+  465 -> 514 (D22); all new green; golden docs zero errors, warning pins
+  all zero (a level-1 title followed by level-2 sections runs to EOF and
+  holds content, so it is not empty)
 
-PRE-EXISTING RED (not this session's; left untouched per §5): NewFileTargetTests
-testSelectedFileAtDepthThreeTargetsDepthTwoParent expects /Vault/Projects/2026
-but the code returns /Vault/Projects/2026/Riyadh (the file's actual parent).
-Present in the 413-test baseline run before any Session-1 file existed. Human
-decides: fix the test or fix NewFileTarget.
+PRE-EXISTING RED (unchanged, not this session's): NewFileTargetTests
+testSelectedFileAtDepthThreeTargetsDepthTwoParent (expects
+/Vault/Projects/2026, code returns /Vault/Projects/2026/Riyadh). Present in
+the 413-test baseline before Session 1. Human decides: fix test or fix code.
 
-## NEXT: Session 2, the four rules + fixtures (specs/rules-engine.md)
+## NEXT: human picks. The spec's deferred items, in rough order:
 
-HeadingLevelJumpRule (compare against the PREVIOUS heading's level, failure
-mode 5; range covers the marker), EmptySectionRule (subheadings-only NOT
-empty; table/image/fence-only NOT empty, failure mode 4), BrokenWikiLinkRule
-(LinkIndex nil = error; no index supplied = nothing, failure mode 6; the only
-error rule), ForbiddenPhraseRule (prose only; fences, inline code, delimiter
-rows, frontmatter excluded). DoD: failure-mode tests before implementation;
-per-rule fixtures with exact counts/ranges/severities; exclusion-zone corpus
-(one fixture, expected ZERO diagnostics); range-validity property test over
-every fixture; golden documents zero errors with pinned warning counts;
-determinism; every fixture loaded by a test; fixtures at
-Tests/KitibTests/Rules/Fixtures/ (spec location; add to project.yml
-resources + a loader mirroring FixtureCorpus's bundle-first pattern, D29).
+1. Problems panel + inline underlines: the presentation layer for
+   diagnostics. Spec out of scope (D16-untestable UI; AppState + editors).
+2. QA export gate: blueprint 3 "exports require a clean pass". Needs the
+   diagnostics wired to export; separate spec.
+3. Required-section-per-template rules: needs the template system (4.3),
+   which does not exist.
+4. Incremental on-edit evaluation: engine runs whole documents now; the
+   pure (text) -> [Diagnostic] shape makes it safe to add later.
+5. Any other build-plan stage the human wants.
 
 ## Gotchas carried forward
 
+- extractWikiLinks is frontmatter-blind and toggles fences on ``` only
+  (D80/D82): [[link]] in frontmatter IS flagged; corpus keeps [[...]] out.
 - findTableRange: range ends BEFORE last row's trailing newline; walk-up can
   return a table above the probe line (containment re-check, D80).
-- extractWikiLinks toggles fences on ``` only; ~~~ content IS link-scanned.
+- isDelimiterRow input arrives with a trailing newline; trim before pipe
+  stripping (Session-2 bug caught by the delimiter-row test).
 - FEATURES.md / DECISIONS.md pre-existing content is em-dash-heavy; new
   content stays em-dash-free (user rule).
-- PagePlan protects TOP-LEVEL blocks only; standardPrintInfo() sets ZERO margins.
+- PagePlan protects TOP-LEVEL blocks only; standardPrintInfo() ZERO margins.
 - FTS5 splits hyphenated terms; a saved query for one errors unless quoted.
-- iPad in portrait reports .regular width; the sidebar collapses until toggled.
-- PARKED still: background indexing (RED), lazy FileItem (AMBER), license files
-  not in Xcode app resources (AMBER).
+- PARKED: background indexing (RED), lazy FileItem (AMBER), license files
+  (AMBER), extractWikiLinks frontmatter-blindness (new, link feature).

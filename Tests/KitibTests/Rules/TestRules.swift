@@ -67,3 +67,27 @@ func makeDiagnostic(_ ruleID: String,
 func makeProjection(_ text: String, linkIndex: LinkIndex? = nil) -> DocumentProjection {
     DocumentProjection.build(from: text, linkIndex: linkIndex)
 }
+
+// MARK: - Session-2 shared helpers
+
+/// The forbidden-phrase list used by the corpus and golden tests. The corpus
+/// and fixtures were authored against these exact phrases; changing them
+/// changes pinned counts by design.
+func standardPhrases() -> [ForbiddenPhraseRule.Phrase] {
+    [
+        ForbiddenPhraseRule.Phrase(pattern: "draft", message: "No drafts", severity: .warning),
+        ForbiddenPhraseRule.Phrase(pattern: "todo", message: "No TODOs", severity: .info),
+        ForbiddenPhraseRule.Phrase(pattern: "fixme", message: "No FIXMEs", severity: .warning),
+        ForbiddenPhraseRule.Phrase(pattern: "lorem ipsum", message: "No lorem ipsum", severity: .warning),
+    ]
+}
+
+/// Runs all four rules over a text with the standard phrase list.
+func runAllFourRules(on text: String, linkIndex: LinkIndex? = nil) -> [Diagnostic] {
+    RuleEngine.run(rules: [
+        HeadingLevelJumpRule(),
+        EmptySectionRule(),
+        BrokenWikiLinkRule(),
+        ForbiddenPhraseRule(phrases: standardPhrases()),
+    ], on: makeProjection(text, linkIndex: linkIndex))
+}

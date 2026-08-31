@@ -23,12 +23,14 @@ enum RuleEngine {
             // nothing, not merely contribute nothing (criterion 4).
             guard configuration.isEnabled(rule.ruleID) else { continue }
 
-            let severity = configuration.severity(for: rule.ruleID,
-                                                  default: rule.defaultSeverity)
+            // Severity is replaced ONLY when the configuration overrides it
+            // (D81). Otherwise the rule's own per-diagnostic severity stands,
+            // which is what criterion 10's per-phrase severity depends on.
+            let override = configuration.severityOverride(for: rule.ruleID)
             for diagnostic in rule.evaluate(projection) {
                 collected.append((ruleIndex, Diagnostic(
                     ruleID: diagnostic.ruleID,
-                    severity: severity,
+                    severity: override ?? diagnostic.severity,
                     message: diagnostic.message,
                     range: diagnostic.range
                 )))

@@ -487,7 +487,32 @@ Session split (human-confirmed): Session 1 = spine, Session 2 = the four rules.
   3 (exact ranges + out-of-bounds nil), 7 (order determinism), 9 (severity
   override) and criteria 1-6. Suite: 465 tests, all 52 green; Executed-N
   rose 413 → 465 (D22).
-⬜ The four rules + fixtures: Session 2, next. HeadingLevelJumpRule,
-  EmptySectionRule, BrokenWikiLinkRule, ForbiddenPhraseRule, per-rule unit
-  fixtures, exclusion-zone corpus (expected ZERO diagnostics), golden warning
-  pins, range-validity property test over every fixture.
+✅ HeadingLevelJumpRule: Sources/Core/Rules/HeadingLevelJumpRule.swift -
+  pairwise against the PREVIOUS heading's level (failure mode 5); range
+  covers the marker run only; message pins the jump (level A to level B).
+✅ EmptySectionRule: Sources/Core/Rules/EmptySectionRule.swift - any
+  non-whitespace content counts, so subheadings/table/fence/image-only
+  sections are NOT empty (failure mode 4); a heading followed directly by
+  another heading IS empty; range covers the heading line.
+✅ BrokenWikiLinkRule: Sources/Core/Rules/BrokenWikiLinkRule.swift - the
+  spec's only error rule; nil index emits nothing (failure mode 6); reads
+  projection.wikiLinks, so fence/backtick exclusion is extractWikiLinks'
+  (sole authority); range covers the [[link]] span.
+✅ ForbiddenPhraseRule: Sources/Core/Rules/ForbiddenPhraseRule.swift -
+  caller-supplied (pattern, message, severity); literal case-insensitive
+  substring matching; excludes fences, inline code, frontmatter (failure
+  mode 2) and table delimiter rows (D82); per-phrase severity preserved
+  unless the configuration overrides (D81); empty patterns ignored.
+✅ Rules fixtures: Tests/KitibTests/Rules/Fixtures/ - 9 fixtures + README
+  (defect/clean twin per rule + exclusion-zones corpus), bundled as a folder
+  reference (project.yml, D29), loader RulesFixtures (bundle-first).
+✅ Session-2 tests: RulesCorpusTests (5, incl. exclusion-zones ZERO +
+  determinism), HeadingLevelJumpRuleTests (8), EmptySectionRuleTests (10),
+  BrokenWikiLinkRuleTests (8), ForbiddenPhraseRuleTests (14),
+  GoldenDocumentRuleTests (3, zero errors + pinned warning counts, all zero),
+  +1 RuleEngine severity-preservation test (D81). Suite: 514 tests, all new
+  green; Executed-N rose 465 -> 514 (D22). Kitib-macOS builds.
+✅ Spec complete: all ten acceptance criteria implemented and tested; the
+  four rules are the last of specs/rules-engine.md's deliverables.
+⬜ Presentation layer (Problems panel, inline underlines) and the QA export
+  gate are out of scope per the spec; separate tasks, human-scheduled.
