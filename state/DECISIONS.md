@@ -942,3 +942,14 @@
   green, and the app was installed and launched on an iPad Pro 11 M4 simulator.
   NOT verified: the menu bar's actual contents. Rendering it needs a held ⌘ on a
   hardware keyboard, and simctl cannot send key events — human check required.
+
+[locked] D79: swift-markdown is NOT authorised for Stage 5 (2026-08-31). Human
+  ruling on the Open RED in specs/rules-engine.md: "Not yet". The rules engine
+  ships with no dependency; DocumentProjection is assembled only from
+  OutlineParser, extractWikiLinks, MarkdownTableParser, and the three exclusion
+  zones (fenced code, inline backticks, frontmatter). The tripwire stands guard:
+  any need for inline syntax (emphasis spans, link destinations, list nesting,
+  block quote structure, inline HTML) is the signal to park the rule and
+  re-raise the RED, not to grow a scanner. The AST, if ever authorised, becomes
+  a second DocumentProjection input adapter in its own session; no rule changes.
+  N14/N15/N37 wait. Spec status: APPROVED.

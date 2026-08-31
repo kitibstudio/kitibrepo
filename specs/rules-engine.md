@@ -5,8 +5,8 @@ Architecture: DECISIONS.md A5 (locked), GAP.md C4 (resolved). Nodes: N12, part o
 N16, part of N13. Depends on: OutlineParser (done), LinkIndex (done),
 MarkdownTableParser (done).
 
-**Status: NOT APPROVED. Contains one open RED (§ Open RED) that must be ruled on
-by the human before any code is written.**
+**Status: APPROVED 2026-08-31.** The Open RED (§ Open RED) was ruled by the human:
+**"Not yet"**; no swift-markdown dependency; this spec ships unchanged.
 
 ## Intent
 
@@ -126,6 +126,10 @@ The AST requires a `swift-markdown` package dependency, which is RED under
 CLAUDE.md §10 and was explicitly deferred in `PARKED.md` "until rules-engine work
 (N12–N18, N37) actually starts". It has now started, so it is raised here.
 
+**RULED 2026-08-31: NOT YET.** The human chose the recommended option. This spec
+ships unchanged; every criterion is met with no dependency; the tripwire stands
+guard; N14/N15/N37 wait. Re-raise this question if a rule genuinely needs inline
+structure that the projection's allowed scanners cannot provide.
 **The question for the human: authorise `swift-markdown` as a Swift Package
 dependency of `Sources/Core` and `KitibTests`, via `project.yml` + `xcodegen
 generate` — yes or no?**
