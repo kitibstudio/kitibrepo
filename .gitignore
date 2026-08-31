@@ -1,5 +1,6 @@
 captures/
 *.png
+!images/*.png
 *.jpg
 # gauntlet.sh writes its log to the repo root BEFORE its own preflight runs
 # `git status --porcelain`. Untracked, that log makes the tree dirty and the

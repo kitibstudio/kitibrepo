@@ -40,7 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------------
 KaTeX
 --------------------------------------------------------------------------------
-https://github.com/KaTeX/KaTeX  —  MIT License
+https://github.com/KaTeX/KaTeX  -  MIT License
+Version bundled: 0.16.9 (web/, Xcode targets); 0.16.11 (Vendor/web, build.sh)
 Used as: bundled resource. The KaTeX JavaScript, stylesheet, and woff2 fonts are
 included inside Kitib.app (Contents/Resources/web) and inlined into the rendered
 preview and exports, so math renders fully offline.
@@ -68,7 +69,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --------------------------------------------------------------------------------
 Mermaid
 --------------------------------------------------------------------------------
-https://github.com/mermaid-js/mermaid  —  MIT License
+https://github.com/mermaid-js/mermaid  -  MIT License
+Version bundled: 10.9.0 (web/, Xcode targets); 10.9.1 (Vendor/web, build.sh)
 Used as: bundled resource. The Mermaid JavaScript library is included inside
 Kitib.app (Contents/Resources/web) and inlined into the rendered preview and
 exports, so diagrams render fully offline.
