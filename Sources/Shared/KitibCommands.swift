@@ -112,4 +112,3 @@ struct KitibCommands: Commands {
         }
     }
 }
-/bin/bash: line 5: /var/folders/pl/5g54201x4qv3vvysynq1v_5c0000gp/T/hermes-cwd-8d8a6973c2b0.txt: No space left on device
