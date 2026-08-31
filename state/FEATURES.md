@@ -447,3 +447,47 @@ Scores (build-plan §4.1): Value 4 / Verifiability 4 / Blast radius 3 / Dep dept
 ## Web/ asset directory
 
 🔨 web/ directory not found in repository — must be manually provisioned (KaTeX + Mermaid JS files); referenced by WebAssets.swift
+
+## Rules Engine: Core Spine (Stage 5, Session 1 of 2)
+
+Scores (spec §Scores): Value 4 / Verifiability 5 / Blast radius 2 / Dep depth 3
+→ priority 3.3. Spec: specs/rules-engine.md (APPROVED 2026-08-31, D79).
+Session split (human-confirmed): Session 1 = spine, Session 2 = the four rules.
+
+✅ Diagnostic + DiagnosticSeverity: Sources/Core/Rules/Diagnostic.swift - the
+  one shape every rule returns (ruleID, severity, message, range:
+  Range<String.Index>). Nothing else; no fix field (spec out of scope).
+✅ Rule protocol: Sources/Core/Rules/Rule.swift - ruleID, defaultSeverity,
+  evaluate(_ projection:). A new rule is a new file; the engine never changes.
+✅ DocumentProjection: Sources/Core/Rules/DocumentProjection.swift -
+  build(from:linkIndex:) runs the four authorised sources ONCE (criterion 6):
+  OutlineParser headings + section ranges, extractWikiLinks, table ranges via
+  MarkdownTableParser.findTableRange (probed per pipe line, containment
+  re-checked, D80), and the exclusion zones. linkIndex is Optional so rules
+  can distinguish "index says no" from "no index supplied" (failure mode 6).
+  Also: range(fromNSRange:) conversion helper + isInside{Fence,InlineCode,
+  Frontmatter} queries.
+✅ ExclusionSpans: Sources/Core/Rules/ExclusionSpans.swift - the ONLY new
+  scanning (tripwire): fenced code (``` and ~~~, toggle semantics matching
+  OutlineParser, unterminated fences run to EOF), inline backticks (matching
+  runs of equal length per CommonMark 6.1, multiline-capable, unclosed spans
+  run to paragraph end), frontmatter (--- opener, ---/... closer, at document
+  start only).
+✅ RuleConfiguration: Sources/Core/Rules/RuleConfiguration.swift - per-ruleID
+  enable/disable + severity override (criterion 4).
+✅ RuleEngine: Sources/Core/Rules/RuleEngine.swift - run(rules:on:
+  configuration:) concatenates, skips disabled rules BEFORE evaluate (they
+  cost nothing), applies severity overrides, sorts by (range start, ruleID,
+  rule index, emit index) for a deterministic TOTAL order (criterion 3,
+  failure mode 7; Swift's sorted is not stable, so rule/emit index
+  tie-breakers are required).
+✅ Rules tests: Tests/KitibTests/Rules/ - 52 tests: RuleConfigurationTests
+  (8), RuleEngineTests (14), DocumentProjectionTests (30). Covers failure
+  modes 1 (fence + backtick immunity at scanner level), 2 (frontmatter),
+  3 (exact ranges + out-of-bounds nil), 7 (order determinism), 9 (severity
+  override) and criteria 1-6. Suite: 465 tests, all 52 green; Executed-N
+  rose 413 → 465 (D22).
+⬜ The four rules + fixtures: Session 2, next. HeadingLevelJumpRule,
+  EmptySectionRule, BrokenWikiLinkRule, ForbiddenPhraseRule, per-rule unit
+  fixtures, exclusion-zone corpus (expected ZERO diagnostics), golden warning
+  pins, range-validity property test over every fixture.

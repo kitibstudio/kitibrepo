@@ -953,3 +953,19 @@
   re-raise the RED, not to grow a scanner. The AST, if ever authorised, becomes
   a second DocumentProjection input adapter in its own session; no rule changes.
   N14/N15/N37 wait. Spec status: APPROVED.
+
+[from-code] D80: rules-engine table ranges come from MarkdownTableParser via
+  findTableRange, probed per pipe-bearing line with a containment re-check
+  (2026-08-31, rules-engine Session 1). findTableRange walks UP to the
+  nearest delimiter row and can return a table sitting ABOVE the probe line
+  when a blank line separates them; the header of a second table probes back
+  into the first. DocumentProjection accepts a candidate only when the probe
+  line lies inside the returned range; a candidate that does not contain the
+  probe line is a table already reported. Two parser quirks are inherited
+  deliberately and recorded so they are not re-litigated: (1) a table range
+  ends BEFORE the last row's trailing newline (endOffset counts inter-line
+  newlines only); (2) findTableRange's offset math is Character-count based,
+  so non-ASCII cells produce slightly wrong ranges (test tables are ASCII).
+  extractWikiLinks likewise toggles fences on ``` ONLY, so a [[wiki-link]]
+  inside a ~~~ fence IS extracted; that parser is the sole authority for
+  links (spec criterion 9) and the projection carries its output unchanged.
