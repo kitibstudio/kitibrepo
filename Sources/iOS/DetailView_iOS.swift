@@ -14,13 +14,16 @@ struct DetailView: View {
     @State private var shareItem: ShareItem?
     @State private var preparingExport = false
 
-    // Compact width (iPhone) has no room for the side panel, so to-dos are
-    // presented as a sheet instead. iPad keeps the inline panel.
+    // Compact width (iPhone) has no room for the side panel, so to-dos and
+    // problems are presented as sheets instead. iPad keeps the inline panels.
     @State private var showTodoSheet = false
     @State private var todoDetent: PresentationDetent = .medium
+    @State private var showProblemsSheet = false
+    @State private var problemsDetent: PresentationDetent = .medium
 
     private var isRegular: Bool { hSize == .regular }
     private var todosVisible: Bool { isRegular ? state.showTodos : showTodoSheet }
+    private var problemsVisible: Bool { isRegular ? state.showProblems : showProblemsSheet }
     private var docTitle: String {
         state.currentFileURL?.deletingPathExtension().lastPathComponent ?? "Document"
     }
@@ -69,6 +72,11 @@ struct DetailView: View {
                       onClose: { showTodoSheet = false },
                       onBeginAdding: { todoDetent = .large })
                 .presentationDetents([.medium, .large], selection: $todoDetent)
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showProblemsSheet) {
+            ProblemsPanel(state: state, onClose: { showProblemsSheet = false })
+                .presentationDetents([.medium, .large], selection: $problemsDetent)
                 .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: Binding(
@@ -135,6 +143,10 @@ struct DetailView: View {
                 showTodoSheet = false
                 state.showTodos = true
             }
+            if regular && showProblemsSheet {
+                showProblemsSheet = false
+                state.showProblems = true
+            }
         }
     }
 
@@ -147,6 +159,7 @@ struct DetailView: View {
                     Divider()
                     PreviewView(state: state)
                     if state.showTodos { Divider(); TodoPanel(state: state).frame(width: 280) }
+                    if state.showProblems { Divider(); ProblemsPanel(state: state).frame(width: 280) }
                 }
             } else if state.showPreview {
                 PreviewView(state: state)
@@ -154,6 +167,7 @@ struct DetailView: View {
                 HStack(spacing: 0) {
                     EditorView(state: state)
                     if state.showTodos && isRegular { Divider(); TodoPanel(state: state).frame(width: 280) }
+                    if state.showProblems && isRegular { Divider(); ProblemsPanel(state: state).frame(width: 280) }
                 }
             }
             Divider()
@@ -213,6 +227,29 @@ struct DetailView: View {
             Button { state.showOutline.toggle() } label: {
                 Image(systemName: "list.bullet")
                     .foregroundStyle(state.showOutline ? Color.accentColor : Color.primary)
+            }
+
+            Button {
+                if isRegular {
+                    state.showProblems.toggle()
+                } else {
+                    problemsDetent = .medium
+                    showProblemsSheet.toggle()
+                }
+            } label: {
+                Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(problemsVisible ? Color.accentColor : Color.primary)
+                    .overlay(alignment: .topTrailing) {
+                        if state.errorCount > 0 {
+                            Text("\(state.errorCount)")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(Color.red))
+                                .offset(x: 7, y: -5)
+                        }
+                    }
             }
 
             Menu {

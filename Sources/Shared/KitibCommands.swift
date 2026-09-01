@@ -80,6 +80,8 @@ struct KitibCommands: Commands {
                 .keyboardShortcut("d", modifiers: [.command, .shift])
             Toggle("Outline", isOn: $state.showOutline)
                 .keyboardShortcut("o", modifiers: [.command, .shift])
+            Toggle("Problems", isOn: $state.showProblems)
+                .keyboardShortcut("e", modifiers: [.command, .shift])
             Divider()
             Picker("Appearance", selection: $state.appearance) {
                 Text("System").tag("system")

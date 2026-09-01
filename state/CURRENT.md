@@ -1,54 +1,56 @@
 # CURRENT.md: the single active task. Rewritten each session. Cap: 40 lines.
 
-## THIS SESSION: rules engine Session 2 of 2 (the four rules) (2026-08-31)
+## THIS SESSION: Problems panel, slice 1 of 2 (2026-09-01)
 
-CONFIRMED started Session 2. specs/rules-engine.md is now COMPLETE: all ten
-acceptance criteria implemented and tested.
+CONFIRMED started. specs/problems-panel.md APPROVED (D83); all nine
+acceptance criteria implemented. The rules engine has its first call site:
+the panel lists the open document's diagnostics, grouped by severity, with
+click-to-scroll, an error-count badge, and a vault-backed link index so
+broken-link detection is real.
 
-- HeadingLevelJumpRule, EmptySectionRule, BrokenWikiLinkRule,
-  ForbiddenPhraseRule: Sources/Core/Rules/ (exact spec identifiers, ruleIDs
-  heading-level-jump / empty-section / broken-wiki-link / forbidden-phrase)
-- Engine fix (D81): severity replaced ONLY under an explicit configuration
-  override, so per-phrase severities survive (criterion 10)
-- ForbiddenPhraseRule mirrors MarkdownTableParser.isDelimiterRow for
-  delimiter-row exclusion (D82, tripwire respected)
-- Fixtures: Tests/KitibTests/Rules/Fixtures/ (9 + README), bundled as folder
-  reference; Tests/KitibTests sources entry excludes Rules/Fixtures to avoid
-  duplicate resource copies
-- 49 new tests (corpus 5, heading-jump 8, empty-section 10, broken-link 8,
-  forbidden 14, golden 3, engine +1). Suite: 514 tests; Executed-N rose
-  465 -> 514 (D22); all new green; golden docs zero errors, warning pins
-  all zero (a level-1 title followed by level-2 sections runs to EOF and
-  holds content, so it is not empty)
+- Core: KitibRules.all (4 rules, ForbiddenPhraseRule inert), Frontmatter-
+  Metadata (title/aliases, ExclusionSpans-mirroring block detection),
+  Diagnostic.nsRange(in:)/lineNumber(in:). 34 new tests, all green.
+- AppState: showProblems (persisted), problems, errorCount, linkIndex in
+  the SAME coalesced single walk as the search index (D83), evaluate-
+  Problems() on open/save/newFile/openFolder/navigateUp/delete + panel
+  appear/refresh; never per keystroke (criterion 2).
+- ProblemsPanel + macOS/iOS columns + compact sheet + toolbar badge +
+  Writer menu toggle at ⌘⇧E (was free).
+- Suite: 548 tests (514 -> 548, D22), new all green. Both targets build;
+  app launches and quits cleanly. Panel rendering + click-to-scroll are a
+  human/simulator check (D16), per the spec.
 
-PRE-EXISTING RED (unchanged, not this session's): NewFileTargetTests
-testSelectedFileAtDepthThreeTargetsDepthTwoParent (expects
-/Vault/Projects/2026, code returns /Vault/Projects/2026/Riyadh). Present in
-the 413-test baseline before Session 1. Human decides: fix test or fix code.
+PRE-EXISTING RED (unchanged): NewFileTargetTests
+testSelectedFileAtDepthThreeTargetsDepthTwoParent. Human decides: fix test
+or fix code.
 
-## NEXT: human picks. The spec's deferred items, in rough order:
+## NEXT: slice 2, inline underlines (specs/problems-panel.md, out of scope)
 
-1. Problems panel + inline underlines: the presentation layer for
-   diagnostics. Spec out of scope (D16-untestable UI; AppState + editors).
-2. QA export gate: blueprint 3 "exports require a clean pass". Needs the
-   diagnostics wired to export; separate spec.
-3. Required-section-per-template rules: needs the template system (4.3),
-   which does not exist.
-4. Incremental on-edit evaluation: engine runs whole documents now; the
-   pure (text) -> [Diagnostic] shape makes it safe to add later.
-5. Any other build-plan stage the human wants.
+Per-platform editor overlay driven by the same state.problems ranges:
+NSTextView temporary attributes on macOS, TextKit on iOS. Separate session;
+D11 stays the sole source of editor styling (A5). After it, the QA export
+gate (exports require a clean pass) is the natural follow-on.
 
 ## Gotchas carried forward
 
-- extractWikiLinks is frontmatter-blind and toggles fences on ``` only
-  (D80/D82): [[link]] in frontmatter IS flagged; corpus keeps [[...]] out.
-- findTableRange: range ends BEFORE last row's trailing newline; walk-up can
-  return a table above the probe line (containment re-check, D80).
-- isDelimiterRow input arrives with a trailing newline; trim before pipe
-  stripping (Session-2 bug caught by the delimiter-row test).
-- FEATURES.md / DECISIONS.md pre-existing content is em-dash-heavy; new
-  content stays em-dash-free (user rule).
-- PagePlan protects TOP-LEVEL blocks only; standardPrintInfo() ZERO margins.
+- D50: SwiftTerm.Color shadows SwiftUI.Color in the macOS target; `Color.red`
+  is a UInt16. Spell SwiftUI.Color explicitly in new macOS views.
+- macOS DetailView body needs @ViewBuilder extraction (editorPane/mainSplit/
+  toolbarContent); the compiler's expression budget blows otherwise.
+- Diagnostic.nsRange(in:) contract: pass the range's own string; foreign
+  indices trap in the stdlib, only a comparison bounds check is possible
+  (D83). The panel re-evaluates on every open/save, so ranges are current.
+- lineNumber counts \n SCALARS: Swift folds \r\n into one grapheme, so a
+  Character scan misses the \n (CRLF bug caught by a test).
+- Broken links can trail a file creation by up to the 1s index coalesce
+  (D73 trade-off, documented).
+- evaluateProblems runs on the main thread over the whole document: fine
+  now; incremental/background evaluation stays parked.
+- ForbiddenPhraseRule is inert (empty phrase list) until a rules settings
+  UI exists (AMBER, PARKED).
+- New content in state files stays em-dash-free (pre-existing content is
+  em-dash-heavy).
 - FTS5 splits hyphenated terms; a saved query for one errors unless quoted.
 - PARKED: background indexing (RED), lazy FileItem (AMBER), license files
-  (AMBER), extractWikiLinks frontmatter-blindness (new, link feature).
+  (AMBER), extractWikiLinks frontmatter-blindness, iOS signing (RED).

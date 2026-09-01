@@ -88,3 +88,13 @@ interception prevented gesture recognition. Replaced by making every cell a
 live `TextField` with `@FocusState` management — simpler code, zero toggle
 bugs, and the `.textFieldStyle(.plain)` makes unfocused cells look like plain
 text anyway.
+
+## 2026-09-01: Problems panel slice 1
+
+Making `Diagnostic.nsRange(in:)` return nil for a range built from a
+DIFFERENT string. Rejected: both `String.Index.utf16Offset(in:)` and
+`String.UTF16View.distance(from:to:)` trap with "String index is out of
+bounds" on a foreign index (verified by probe), so no guard can even run.
+The helper now documents a contract ("pass the range's own string") and a
+comparison-only bounds check, which catches the stale-longer-text case
+without trapping. See D83.

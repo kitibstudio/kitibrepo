@@ -259,3 +259,19 @@ keeps `[[...]]` out of frontmatter (documented in the fixture README). The
 fix is a change to the LinkIndex feature's parser (adjacent feature, not the
 rules engine), so it is parked rather than implemented here. Re-raise when
 link work is next scheduled; a frontmatter-aware link scanner is the shape.
+
+## Problems panel: deferred (2026-09-01)
+
+Slice 1 (the panel) shipped this session (D83). Deferred, all beyond GREEN:
+
+- **Inline underlines** (slice 2 of specs/problems-panel.md): per-platform
+  editor overlay (temporary attributes on NSTextStorage / TextKit), driven
+  by the same `state.problems` ranges. D11 stays the sole source of editor
+  styling (A5); the diagnostics overlay is a separate layer.
+- **Rules settings UI** (AMBER): enable/disable rules, severity overrides,
+  forbidden-phrase editing. ForbiddenPhraseRule is deliberately inert until
+  this exists (spec criterion 6).
+- **Vault-wide problems** (scope change): iterate every file, jump between
+  files. Different product shape from the current-document panel.
+- **Per-keystroke / incremental evaluation**: CURRENT.md option 4; the pure
+  (text) -> [Diagnostic] shape keeps it safe to add later.

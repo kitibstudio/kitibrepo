@@ -997,3 +997,36 @@
   BrokenWikiLinkRule; the exclusion-zone corpus keeps [[...]] out of
   frontmatter for that reason (documented in the fixture README; candidate
   for a separate LinkIndex-feature fix, see PARKED.md).
+
+[locked] D83: Problems Panel spec APPROVED, slice 1 built (2026-09-01).
+  Human confirmed specs/problems-panel.md. The panel is the rules engine's
+  first call site. Implementation rulings, all GREEN:
+  1. Diagnostic.nsRange(in:) has NO foreign-range guard. Both
+     `String.Index.utf16Offset(in:)` and `String.UTF16View.distance` TRAP
+     on an index from a different string (probed empirically); a
+     nil-returning guard for foreign input is unachievable in this stdlib.
+     The helper's contract is "pass the string the range was built from";
+     a comparison-only bounds check (>= startIndex, <= endIndex; index
+     comparison is numeric and cannot trap) catches the common stale case
+     of a longer previous text against a shorter current one. The panel
+     always satisfies the contract because it re-evaluates on every open
+     and save.
+  2. The link index is built in the SAME single walk as the search index
+     (one pass per coalesced rebuild, D73), not by the separate
+     rebuildLinkIndex() the spec sketched. Every file gains an entry (its
+     filename stem always resolves); FrontmatterMetadata enriches title
+     and aliases when present.
+  3. D50 recurrence: SwiftTerm.Color shadows SwiftUI.Color in the macOS
+     target, so `Color.red` resolves to a UInt16 RGB component.
+     ProblemsPanel's severity colors and the macOS toolbar badge spell
+     SwiftUI.Color explicitly.
+  4. The macOS DetailView body is split into editorPane / mainSplit /
+     toolbarContent @ViewBuilder properties: the compiler's expression
+     budget blew on the body once the Problems column and the badge
+     overlay were added (nested conditionals in HSplitView plus a
+     conditional overlay inside the toolbar). Behaviour unchanged.
+  ForbiddenPhraseRule ships inert (empty phrase list) until a rules
+  settings surface exists; that is spec criterion 6, not a deviation.
+  Suite: 548 tests (514 -> 548, D22), the only failure being the
+  pre-existing NewFileTargetTests RED. Panel rendering and click-to-scroll
+  remain a human/simulator check (D16), as the spec states.

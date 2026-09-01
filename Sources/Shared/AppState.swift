@@ -120,6 +120,18 @@ final class AppState: ObservableObject {
     @Published var showTerminal = false
     @Published var showOutline: Bool { didSet { save(showOutline, "showOutline") } }
     @Published var showTodos: Bool { didSet { save(showTodos, "showTodos") } }
+    @Published var showProblems: Bool { didSet { save(showProblems, "showProblems") } }
+
+    /// The open document's current diagnostics from the rules engine
+    /// (specs/problems-panel.md criterion 1). Rebuilt by
+    /// `evaluateProblems()` on document open, save, the panel's appearance,
+    /// and the panel's refresh button; never per keystroke (criterion 2).
+    /// Cleared when no document is open.
+    @Published private(set) var problems: [Diagnostic] = []
+
+    /// Number of error-severity findings; drives the toolbar badge
+    /// (criterion 4).
+    var errorCount: Int { problems.filter { $0.severity == .error }.count }
 
     // MARK: Paste healing preview
 
@@ -175,6 +187,13 @@ final class AppState: ObservableObject {
     /// In-memory FTS5 index over every Markdown file under the open root.
     private var searchIndex: SearchIndex?
 
+    /// Wiki-link resolution index over the same vault, rebuilt in the same
+    /// coalesced pass (D73). Nil when no root is open, which the engine
+    /// distinguishes from "index says no" (rules-engine spec failure
+    /// mode 6); a link to a just-created file can therefore read as broken
+    /// for up to the coalesce delay, the same accepted trade-off as search.
+    private var linkIndex: LinkIndex?
+
     /// Coalesces index rebuilds (D73). A rebuild reads every Markdown file
     /// under the root, so it must never run once per file operation.
     private var indexWorkItem: DispatchWorkItem?
@@ -201,17 +220,23 @@ final class AppState: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + indexCoalesceDelay, execute: item)
     }
 
-    /// Rebuilds the search index from the current file tree. Prefer
-    /// `scheduleIndexRebuild()` — this walks and reads the whole tree.
+    /// Rebuilds the search index AND the link index from the current file
+    /// tree in ONE walk. Prefer `scheduleIndexRebuild()`: this walks and
+    /// reads the whole tree. Every file gains a link-index entry (its
+    /// filename stem always resolves); frontmatter title and aliases enrich
+    /// the entry when present.
     func rebuildSearchIndex() {
         guard let root = rootItem else {
             searchIndex = nil
+            linkIndex = nil
             return
         }
         guard let index = try? SearchIndex() else {
             searchIndex = nil
+            linkIndex = nil
             return
         }
+        var entries: [LinkIndex.Entry] = []
         func walk(_ item: FileItem) {
             if item.isDirectory {
                 for child in item.children ?? [] { walk(child) }
@@ -223,16 +248,38 @@ final class AppState: ObservableObject {
                     title: item.url.deletingPathExtension().lastPathComponent,
                     content: content
                 )
+                let meta = FrontmatterMetadata.extract(from: content)
+                entries.append(LinkIndex.Entry(
+                    path: item.id,
+                    title: meta?.title,
+                    aliases: meta?.aliases ?? []
+                ))
             }
         }
         walk(root)
         searchIndex = index
+        linkIndex = LinkIndex(entries: entries)
     }
 
     /// Runs a smart-folder query against the current index.
     func searchSmartFolder(_ query: String) -> [SearchHit] {
         guard let index = searchIndex else { return [] }
         return (try? index.search(query)) ?? []
+    }
+
+    /// Runs the rules engine over the open document and stores the result
+    /// (specs/problems-panel.md criteria 1 and 2). Triggered on document
+    /// open, save (including autosave), the panel's appearance, and the
+    /// panel's refresh button; never per keystroke. Clears to an empty list
+    /// when no document is open.
+    func evaluateProblems() {
+        guard currentFileURL != nil else {
+            problems = []
+            return
+        }
+        let projection = DocumentProjection.build(from: text, linkIndex: linkIndex)
+        problems = RuleEngine.run(rules: KitibRules.all, on: projection,
+                                  configuration: RuleConfiguration())
     }
 
     /// Hits for the active folder, recomputed from the live index.
@@ -479,6 +526,7 @@ final class AppState: ObservableObject {
         celebrateGoal = d.object(forKey: "celebrateGoal") as? Bool ?? true
         showTodos = d.bool(forKey: "showTodos")
         showOutline = d.bool(forKey: "showOutline")
+        showProblems = d.bool(forKey: "showProblems")
         showPastePreview = d.object(forKey: "showPastePreview") as? Bool ?? true
         goals = (d.dictionary(forKey: "wordGoals") as? [String: Int]) ?? [:]
         recentPaths = d.stringArray(forKey: "recentFiles") ?? []
@@ -582,6 +630,7 @@ final class AppState: ObservableObject {
         selectedFileID = nil
         text = ""
         rootURL = url
+        evaluateProblems()
     }
 
     /// Moves the root up one level to the current root's parent folder.
@@ -612,6 +661,7 @@ final class AppState: ObservableObject {
         selectedFileID = nil
         text = ""
         rootURL = parent
+        evaluateProblems()
     }
 
     func open(file: FileItem) {
@@ -623,6 +673,7 @@ final class AppState: ObservableObject {
         wordGoal = goals[file.id] ?? 0
         todos = allTodos[file.id] ?? []
         noteRecent(file.id)
+        evaluateProblems()
     }
 
     /// Opens by path — used by the iPhone browser, whose navigation is
@@ -638,6 +689,7 @@ final class AppState: ObservableObject {
         try? text.write(to: url, atomically: true, encoding: .utf8)
         isDirty = false
         scheduleIndexRebuild()
+        evaluateProblems()
     }
 
     func textChanged(_ newText: String) {
@@ -690,6 +742,7 @@ final class AppState: ObservableObject {
         wordGoal = 0
         todos = []
         noteRecent(final.path)
+        evaluateProblems()
     }
 
     func newFolder(named name: String, in folder: URL? = nil) {
@@ -776,6 +829,7 @@ final class AppState: ObservableObject {
             isDirty = false
         }
         refreshTree()
+        evaluateProblems()
     }
 
     #if os(macOS)

@@ -514,5 +514,48 @@ Session split (human-confirmed): Session 1 = spine, Session 2 = the four rules.
   green; Executed-N rose 465 -> 514 (D22). Kitib-macOS builds.
 ✅ Spec complete: all ten acceptance criteria implemented and tested; the
   four rules are the last of specs/rules-engine.md's deliverables.
-⬜ Presentation layer (Problems panel, inline underlines) and the QA export
-  gate are out of scope per the spec; separate tasks, human-scheduled.
+✅ Presentation layer slice 1 (Problems panel): shipped 2026-09-01, see the
+  Problems Panel section below. Slice 2 (inline underlines) and the QA
+  export gate remain separate tasks, human-scheduled.
+
+## Problems Panel (Stage 5 presentation, slice 1 of 2: the panel)
+
+Scores (specs/problems-panel.md): Value 5 / Verifiability 2 / Blast radius 2
+/ Dep depth 1 → priority 5.0. Spec APPROVED 2026-09-01 (D83). The rules
+engine's first call site: the open document's diagnostics, grouped by
+severity, click-to-scroll.
+
+✅ KitibRules: Sources/Core/Rules/KitibRules.swift: the default ruleset:
+  the four spec rules in spec order (the engine's tie-break order), fresh
+  RuleConfiguration. ForbiddenPhraseRule ships with an EMPTY phrase list
+  and is inert until a rules settings surface exists (criterion 6).
+✅ FrontmatterMetadata: Sources/Core/LinkIndex/FrontmatterMetadata.swift:
+  title + aliases from the frontmatter block; block detection mirrors
+  ExclusionSpans (--- opener, ---/... closer, document start only; unclosed
+  opener is nil). Keys at column 0 only; quoted values unquoted; flow
+  [a, b] and dash block alias lists; multi-line YAML out of scope.
+✅ Diagnostic navigation helpers: Sources/Core/Rules/Diagnostic+Navigation.swift:
+  nsRange(in:) (UTF-16; contract: pass the range's own string, D83) and
+  lineNumber(in:) (1-based; counts newline SCALARS so the \r\n grapheme
+  cannot hide the \n).
+✅ AppState wiring: Sources/Shared/AppState.swift: showProblems
+  (persisted), problems (@Published private(set)), errorCount, linkIndex
+  built in the SAME coalesced single walk as the search index (D73/D83),
+  evaluateProblems() triggered on open/save/newFile/openFolder/navigateUp/
+  delete plus panel appear and refresh; never per keystroke (criterion 2).
+✅ ProblemsPanel: Sources/Shared/ProblemsPanel.swift: severity-grouped
+  list (errors/warnings/info), engine order preserved within groups,
+  message + ruleID + 1-based line per row, click scrolls via the existing
+  scrollToHeading bridge and leaves the panel open (criterion 3), refresh
+  button, "No problems" empty state, TodoPanel header/metrics conventions.
+✅ Integrations: macOS: HSplitView column + toolbar button with a red
+  error-count badge; DetailView body split into editorPane/mainSplit/
+  toolbarContent builders (D83 type-checker fix). iOS: 280pt column on
+  regular, sheet with detents on compact (TodoPanel pattern), toolbar
+  badge. Writer menu toggle at ⌘⇧E (was free in KitibCommands).
+✅ Tests: 34 new: KitibRulesTests (7), FrontmatterMetadataTests (16),
+  DiagnosticNavigationTests (11). Suite: 548 (514 → 548, D22); the only
+  failure is the pre-existing NewFileTargetTests RED (human decides).
+✅ Both targets build; app launches and quits cleanly.
+🔨 Panel rendering and click-to-scroll are a human/simulator check (D16):
+  every automatable piece is tested; the view itself is arrangement.
