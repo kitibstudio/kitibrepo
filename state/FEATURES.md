@@ -1,7 +1,22 @@
 # FEATURES.md — what EXISTS, confirmed from code. Cap: 200 lines.
 # ✅ = implemented and confirmed by reading the file.
 # 🔨 = partial, stubbed, or cannot confirm it works.
+# ⬜ = specced but not built (spec awaiting approval or approved-and-queued).
 # Listed in source-file order, not blueprint order.
+
+## Specced, not built
+
+⬜ Apple Pencil support (iPadOS editor) — specs/apple-pencil.md (DRAFT, NOT
+   APPROVED 2026-09-02). Review of current state: the iOS editor has NO PencilKit,
+   NO Scribble code, NO UIPencilInteraction, NO edit-menu customisation — Apple
+   Pencil works only via stock UITextView. Spec proposes 4 slices: (A) Scribble
+   precision — investigate whether debounced applyHighlighting() disturbs mid-word
+   scratch-delete + iPad line spacing + Help entry; (B) selection edit menu with
+   Markdown actions via editMenuForTextIn (iOS 16); (C) Apple Pencil double-tap
+   via UIPencilInteraction; (D) Apple Pencil Pro squeeze palette — BLOCKED by an
+   Open RED (needs iOS deployment target 16.0 → 17.5, a project.yml change, human
+   ruling required). The mid-word scratch-delete report is Apple's system-owned
+   word-granular Scribble behaviour; no public API changes it.
 
 ## App Shell
 

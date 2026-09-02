@@ -1,56 +1,45 @@
 # CURRENT.md: the single active task. Rewritten each session. Cap: 40 lines.
 
-## THIS SESSION: Problems panel, slice 1 of 2 (2026-09-01)
+## THIS SESSION: Apple Pencil review + draft spec (2026-09-02)
 
-CONFIRMED started. specs/problems-panel.md APPROVED (D83); all nine
-acceptance criteria implemented. The rules engine has its first call site:
-the panel lists the open document's diagnostics, grouped by severity, with
-click-to-scroll, an error-count badge, and a vault-backed link index so
-broken-link detection is real.
+A review, not an implementation. NO source changes. Deliverables:
 
-- Core: KitibRules.all (4 rules, ForbiddenPhraseRule inert), Frontmatter-
-  Metadata (title/aliases, ExclusionSpans-mirroring block detection),
-  Diagnostic.nsRange(in:)/lineNumber(in:). 34 new tests, all green.
-- AppState: showProblems (persisted), problems, errorCount, linkIndex in
-  the SAME coalesced single walk as the search index (D83), evaluate-
-  Problems() on open/save/newFile/openFolder/navigateUp/delete + panel
-  appear/refresh; never per keystroke (criterion 2).
-- ProblemsPanel + macOS/iOS columns + compact sheet + toolbar badge +
-  Writer menu toggle at ⌘⇧E (was free).
-- Suite: 548 tests (514 -> 548, D22), new all green. Both targets build;
-  app launches and quits cleanly. Panel rendering + click-to-scroll are a
-  human/simulator check (D16), per the spec.
+- `specs/apple-pencil.md` — DRAFT, NOT APPROVED. 4 slices: (A) Scribble
+  precision, (B) selection edit menu with Markdown actions, (C) Pencil
+  double-tap, (D) Pencil Pro squeeze palette (BLOCKED by an Open RED).
+- `state/FEATURES.md` — new "Specced, not built" section, ⬜ row + ⬜ legend.
+- `state/PARKED.md` — RED entry: iOS target 16.0 → 17.5 for Slice D.
 
-PRE-EXISTING RED (unchanged): NewFileTargetTests
-testSelectedFileAtDepthThreeTargetsDepthTwoParent. Human decides: fix test
-or fix code.
+Findings: the iOS editor (`Sources/iOS/EditorView_iOS.swift`) has NO PencilKit,
+NO Scribble code, NO `UIPencilInteraction`, NO `editMenuForTextIn` — Apple
+Pencil is entirely stock `UITextView`. The user's mid-word scratch-delete
+report is Apple's system-owned word-granular Scribble behaviour; no public API
+changes it. One Kitib-side variable to check first on a real device: whether
+the debounced `applyHighlighting()` (which re-sets `selectedRange` every
+change) disturbs a multi-step Scribble edit (spec criterion A1).
 
-## NEXT: slice 2, inline underlines (specs/problems-panel.md, out of scope)
+## NEXT: two independent queued tasks, human picks order
 
-Per-platform editor overlay driven by the same state.problems ranges:
-NSTextView temporary attributes on macOS, TextKit on iOS. Separate session;
-D11 stays the sole source of editor styling (A5). After it, the QA export
-gate (exports require a clean pass) is the natural follow-on.
+1. Human: approve `specs/apple-pencil.md` + rule on its Open RED (target bump).
+   Then build Slice A (or B — B is the most self-verifying: pure Core
+   wrap/unwrap functions + `editMenuForTextIn` wiring).
+2. Problems panel slice 2 — inline underlines (specs/problems-panel.md, out of
+   scope of slice 1). Per-platform editor overlay driven by `state.problems`
+   ranges: NSTextView temporary attributes on macOS, TextKit on iOS. D11 stays
+   the sole source of editor styling (A5). After it, the QA export gate.
 
 ## Gotchas carried forward
 
-- D50: SwiftTerm.Color shadows SwiftUI.Color in the macOS target; `Color.red`
-  is a UInt16. Spell SwiftUI.Color explicitly in new macOS views.
-- macOS DetailView body needs @ViewBuilder extraction (editorPane/mainSplit/
-  toolbarContent); the compiler's expression budget blows otherwise.
-- Diagnostic.nsRange(in:) contract: pass the range's own string; foreign
-  indices trap in the stdlib, only a comparison bounds check is possible
-  (D83). The panel re-evaluates on every open/save, so ranges are current.
-- lineNumber counts \n SCALARS: Swift folds \r\n into one grapheme, so a
-  Character scan misses the \n (CRLF bug caught by a test).
-- Broken links can trail a file creation by up to the 1s index coalesce
-  (D73 trade-off, documented).
-- evaluateProblems runs on the main thread over the whole document: fine
-  now; incremental/background evaluation stays parked.
-- ForbiddenPhraseRule is inert (empty phrase list) until a rules settings
-  UI exists (AMBER, PARKED).
-- New content in state files stays em-dash-free (pre-existing content is
-  em-dash-heavy).
-- FTS5 splits hyphenated terms; a saved query for one errors unless quoted.
-- PARKED: background indexing (RED), lazy FileItem (AMBER), license files
-  (AMBER), extractWikiLinks frontmatter-blindness, iOS signing (RED).
+- Apple Pencil Scribble scratch-out is WORD-granular by Apple's design. Sub-word
+  precision comes from text size / line spacing / circle-to-select, not an API.
+- `UIPencilInteraction` double-tap is iOS 12.1+ (fine on the iOS 16 target);
+  squeeze + `.showContextualPalette` are iOS 17.5+ (the Open RED).
+- Pencil gestures are NOT verifiable in-session (ui-conventions §1.2) — ship one
+  reasoned change, hand back an ordered human device check.
+- PRE-EXISTING RED (unchanged): NewFileTargetTests
+  testSelectedFileAtDepthThreeTargetsDepthTwoParent. Human decides.
+- D50: SwiftTerm.Color shadows SwiftUI.Color in the macOS target; spell
+  SwiftUI.Color explicitly in new macOS views.
+- New content in state files stays em-dash-free.
+- PARKED: iOS signing/target bump (RED), background indexing (RED), lazy
+  FileItem (AMBER), rules settings UI (AMBER), inline-underline overlay.

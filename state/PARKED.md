@@ -260,6 +260,17 @@ fix is a change to the LinkIndex feature's parser (adjacent feature, not the
 rules engine), so it is parked rather than implemented here. Re-raise when
 link work is next scheduled; a frontmatter-aware link scanner is the shape.
 
+## 2026-09-02 (RED) — iOS deployment target bump for Apple Pencil Pro squeeze
+
+`specs/apple-pencil.md` Slice D (Apple Pencil Pro squeeze → contextual palette)
+needs `pencilInteraction(_:didReceiveSqueeze:)` and
+`UIPencilPreferredAction.showContextualPalette`, both **iOS 17.5+**. The target is
+**iOS 16.0** (D13). Raising it in `project.yml` + `xcodegen generate` is a
+build-settings change, RED under CLAUDE.md §10, and drops every device below the
+new floor. Human ruling required — written up as the spec's **Open RED** with the
+three rulings and their consequences. Slices A–C of the spec are iOS 16 and are
+NOT blocked by this. Not attempted.
+
 ## Problems panel: deferred (2026-09-01)
 
 Slice 1 (the panel) shipped this session (D83). Deferred, all beyond GREEN:
