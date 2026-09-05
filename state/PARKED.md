@@ -212,7 +212,7 @@ The uniquing fix (D72) removed the common cause of the silent no-op but not
 this one. Reporting it needs an error surface in the sidebar — new UI, so AMBER.
 Precedent: D71 did the same for print/PDF export.
 
-## 2026-08-14 (RED) — move search indexing off the main thread
+## [RESOLVED 2026-09-05, D84] 2026-08-14 (RED) — move search indexing off the main thread
 
 D73 coalesced the whole-vault re-index to one pass per burst, which removes the
 per-save stall. The pass itself is still synchronous on the main thread, so a
@@ -221,13 +221,26 @@ running the file reads and FTS5 inserts on a background queue — SQLite
 connections have thread affinity, so it means touching `SearchIndex`, which the
 suite does cover. Separate change, not a follow-on.
 
-## 2026-08-14 (AMBER) — FileItem loads the entire tree eagerly
+Resolved by D84, human-authorized after a dogfood report: clicking "Reopen" on
+a large vault hung macOS for a long time. `rebuildSearchIndex()` now runs on
+`vaultQueue` and publishes back to the main thread; a `vaultGeneration` guard
+prevents a stale pass from overwriting a newer one. `FileItem.children` was
+confirmed set-once (no reassignment site), so reading it off-thread is safe.
+
+## [RESOLVED 2026-09-05, D84] 2026-08-14 (AMBER) — FileItem loads the entire tree eagerly
 
 `FileItem.init` recurses through every subdirectory before returning, so
 `refreshTree()` enumerates the whole vault. Lazy per-folder loading would fix
 it, but `rebuildSearchIndex()` walks the same tree to find files to index —
 made lazy, it would silently index only expanded folders. Needs the index to
 walk the filesystem itself rather than the view model.
+
+Partially resolved by D84 — NOT by making loading lazy (that idea, and its
+`rebuildSearchIndex` conflict above, are UNCHANGED and still apply if lazy
+loading is ever wanted). D84 instead moved the same eager, whole-tree
+`FileItem` construction onto `vaultQueue`, so it no longer blocks the main
+thread. The walk is exactly as eager as before; it just doesn't hang the UI
+doing it. Lazy per-folder loading remains a distinct, un-done idea.
 
 ## 2026-08-15 — iPad sidebar drag-and-drop deferred (note, not a deviation)
 
@@ -270,6 +283,22 @@ build-settings change, RED under CLAUDE.md §10, and drops every device below th
 new floor. Human ruling required — written up as the spec's **Open RED** with the
 three rulings and their consequences. Slices A–C of the spec are iOS 16 and are
 NOT blocked by this. Not attempted.
+
+## 2026-09-05 — iPad "not filling the screen" is Stage Manager, not a bug
+
+Dogfood report: a real-device iPad screenshot showed the app in a smaller,
+bordered window rather than full screen. Confirmed with the human: Stage
+Manager is ON on that iPad. Multi-window/Stage Manager support is explicitly
+not yet built (GAP.md N11) — the app declares no preferred window size for
+iPadOS windowed mode, so the system is giving it some default smaller window,
+which the human can drag/maximize like a Mac window. No code change made.
+
+If this keeps coming up in dogfooding: the fix is an explicit default window
+size for iPad's windowed mode (there is precedent — `KitibApp.swift` already
+sets `.frame(minWidth: 760, minHeight: 480)` for the analogous macOS case) —
+but that is new interface behavior for a platform mode this app has never
+targeted, so it is AMBER, not GREEN, and belongs with N11 rather than as a
+one-line patch here.
 
 ## Problems panel: deferred (2026-09-01)
 

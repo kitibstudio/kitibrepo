@@ -202,6 +202,17 @@ final class AppState: ObservableObject {
     /// Results can therefore trail the disk by up to this long, by decision.
     private let indexCoalesceDelay: TimeInterval = 1.0
 
+    /// Off-main-thread home for the file-tree walk and the FTS5 rebuild
+    /// (D84) — both read every file under the root and were previously
+    /// synchronous on the main thread, which is what made "Reopen" on a
+    /// large vault hang the UI.
+    private let vaultQueue = DispatchQueue(label: "com.sean.kitib.vault", qos: .userInitiated)
+
+    /// Bumped by every `refreshTree()` call. A background pass checks this
+    /// before publishing its result, so a root switched again mid-walk
+    /// cannot have its slower, superseded pass overwrite the newer one.
+    private var vaultGeneration = 0
+
     /// Requests a rebuild, collapsing a burst of file operations into one.
     ///
     /// A single save previously cost two whole-vault passes on the main thread:
@@ -226,39 +237,49 @@ final class AppState: ObservableObject {
     /// filename stem always resolves); frontmatter title and aliases enrich
     /// the entry when present.
     func rebuildSearchIndex() {
+        let generation = vaultGeneration
         guard let root = rootItem else {
             searchIndex = nil
             linkIndex = nil
             return
         }
-        guard let index = try? SearchIndex() else {
-            searchIndex = nil
-            linkIndex = nil
-            return
-        }
-        var entries: [LinkIndex.Entry] = []
-        func walk(_ item: FileItem) {
-            if item.isDirectory {
-                for child in item.children ?? [] { walk(child) }
-            } else {
-                guard let content = try? String(contentsOf: item.url, encoding: .utf8)
-                else { return }
-                try? index.index(
-                    id: item.id,
-                    title: item.url.deletingPathExtension().lastPathComponent,
-                    content: content
-                )
-                let meta = FrontmatterMetadata.extract(from: content)
-                entries.append(LinkIndex.Entry(
-                    path: item.id,
-                    title: meta?.title,
-                    aliases: meta?.aliases ?? []
-                ))
+        vaultQueue.async { [weak self] in
+            guard let index = try? SearchIndex() else {
+                DispatchQueue.main.async {
+                    guard let self, generation == self.vaultGeneration else { return }
+                    self.searchIndex = nil
+                    self.linkIndex = nil
+                }
+                return
+            }
+            var entries: [LinkIndex.Entry] = []
+            func walk(_ item: FileItem) {
+                if item.isDirectory {
+                    for child in item.children ?? [] { walk(child) }
+                } else {
+                    guard let content = try? String(contentsOf: item.url, encoding: .utf8)
+                    else { return }
+                    try? index.index(
+                        id: item.id,
+                        title: item.url.deletingPathExtension().lastPathComponent,
+                        content: content
+                    )
+                    let meta = FrontmatterMetadata.extract(from: content)
+                    entries.append(LinkIndex.Entry(
+                        path: item.id,
+                        title: meta?.title,
+                        aliases: meta?.aliases ?? []
+                    ))
+                }
+            }
+            walk(root)
+            let linkIndex = LinkIndex(entries: entries)
+            DispatchQueue.main.async {
+                guard let self, generation == self.vaultGeneration else { return }
+                self.searchIndex = index
+                self.linkIndex = linkIndex
             }
         }
-        walk(root)
-        searchIndex = index
-        linkIndex = LinkIndex(entries: entries)
     }
 
     /// Runs a smart-folder query against the current index.
@@ -606,14 +627,22 @@ final class AppState: ObservableObject {
     }
 
     func refreshTree() {
+        vaultGeneration += 1
+        let generation = vaultGeneration
+        indexWorkItem?.cancel()
         guard let root = rootURL else {
             rootItem = nil
-            indexWorkItem?.cancel()
             rebuildSearchIndex()   // clears the index; reads nothing
             return
         }
-        rootItem = FileItem(url: root, isDirectory: true)
-        scheduleIndexRebuild()
+        vaultQueue.async { [weak self] in
+            let tree = FileItem(url: root, isDirectory: true)
+            DispatchQueue.main.async {
+                guard let self, generation == self.vaultGeneration else { return }
+                self.rootItem = tree
+                self.scheduleIndexRebuild()
+            }
+        }
     }
 
     // MARK: Folder / file selection

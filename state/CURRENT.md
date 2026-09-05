@@ -1,45 +1,47 @@
 # CURRENT.md: the single active task. Rewritten each session. Cap: 40 lines.
 
-## THIS SESSION: Apple Pencil review + draft spec (2026-09-02)
+## THIS SESSION: dogfood bug report — two findings (2026-09-05)
 
-A review, not an implementation. NO source changes. Deliverables:
+Not the previously-queued Apple Pencil/Problems-panel work — a dogfood report
+came in with two screenshots and took priority.
 
-- `specs/apple-pencil.md` — DRAFT, NOT APPROVED. 4 slices: (A) Scribble
-  precision, (B) selection edit menu with Markdown actions, (C) Pencil
-  double-tap, (D) Pencil Pro squeeze palette (BLOCKED by an Open RED).
-- `state/FEATURES.md` — new "Specced, not built" section, ⬜ row + ⬜ legend.
-- `state/PARKED.md` — RED entry: iOS target 16.0 → 17.5 for Slice D.
+1. **macOS: "Reopen" hangs on a large vault.** Diagnosed as the compounding
+   of two already-PARKED performance items (eager `FileItem` tree walk +
+   main-thread FTS5 rebuild), both triggered synchronously and un-debounced
+   the moment `rootURL` is assigned. Human authorized the RED fix. Implemented
+   as D84: both the tree walk and the index rebuild now run on a background
+   `vaultQueue`, guarded by a `vaultGeneration` counter so a superseded pass
+   can't clobber a newer one. Verified: both targets build, suite still
+   548/548 with only the pre-existing `NewFileTargetTests` failure. NOT
+   verified: an actual large/iCloud vault on a real Mac — human check needed.
+2. **iPad: app not filling the screen.** Confirmed with the human this is
+   Stage Manager (on, on that iPad) giving the app a small windowed default,
+   not an app bug — multi-window/Stage Manager support is explicitly unbuilt
+   (GAP.md N11). No code change. Logged to PARKED.md with the shape a real
+   fix would take (an explicit default window size for iPad's windowed mode,
+   AMBER) if it recurs.
 
-Findings: the iOS editor (`Sources/iOS/EditorView_iOS.swift`) has NO PencilKit,
-NO Scribble code, NO `UIPencilInteraction`, NO `editMenuForTextIn` — Apple
-Pencil is entirely stock `UITextView`. The user's mid-word scratch-delete
-report is Apple's system-owned word-granular Scribble behaviour; no public API
-changes it. One Kitib-side variable to check first on a real device: whether
-the debounced `applyHighlighting()` (which re-sets `selectedRange` every
-change) disturbs a multi-step Scribble edit (spec criterion A1).
+## NEXT: two independent queued tasks, unchanged from before this session
 
-## NEXT: two independent queued tasks, human picks order
-
-1. Human: approve `specs/apple-pencil.md` + rule on its Open RED (target bump).
-   Then build Slice A (or B — B is the most self-verifying: pure Core
-   wrap/unwrap functions + `editMenuForTextIn` wiring).
-2. Problems panel slice 2 — inline underlines (specs/problems-panel.md, out of
-   scope of slice 1). Per-platform editor overlay driven by `state.problems`
-   ranges: NSTextView temporary attributes on macOS, TextKit on iOS. D11 stays
-   the sole source of editor styling (A5). After it, the QA export gate.
+1. Human: approve `specs/apple-pencil.md` + rule on its Open RED (target bump
+   16.0 → 17.5 for Slice D). Then build Slice A or B.
+2. Problems panel slice 2 — inline underlines (specs/problems-panel.md).
 
 ## Gotchas carried forward
 
-- Apple Pencil Scribble scratch-out is WORD-granular by Apple's design. Sub-word
-  precision comes from text size / line spacing / circle-to-select, not an API.
-- `UIPencilInteraction` double-tap is iOS 12.1+ (fine on the iOS 16 target);
-  squeeze + `.showContextualPalette` are iOS 17.5+ (the Open RED).
-- Pencil gestures are NOT verifiable in-session (ui-conventions §1.2) — ship one
-  reasoned change, hand back an ordered human device check.
+- D84: `rebuildSearchIndex`'s "first query never empty" guarantee (D73) is now
+  soft, not hard — the immediate-rebuild path is also async. A search issued
+  the instant a very large folder opens can transiently see an empty index.
+- `FileItem.children` MUST stay set-once (only in `init`/`loadChildren`) — D84's
+  off-main-thread walk relies on that invariant. Grep before adding any other
+  `.children =` assignment.
+- Ask "is Stage Manager on?" before diagnosing any iPad "wrong size / doesn't
+  fill screen" report — it looks exactly like a layout bug and isn't one.
 - PRE-EXISTING RED (unchanged): NewFileTargetTests
   testSelectedFileAtDepthThreeTargetsDepthTwoParent. Human decides.
 - D50: SwiftTerm.Color shadows SwiftUI.Color in the macOS target; spell
   SwiftUI.Color explicitly in new macOS views.
 - New content in state files stays em-dash-free.
-- PARKED: iOS signing/target bump (RED), background indexing (RED), lazy
-  FileItem (AMBER), rules settings UI (AMBER), inline-underline overlay.
+- Uncommitted, unrelated to this session's fix: `.disabled(state.currentFileURL
+  == nil)` on the Problems toggle/button across KitibCommands + both
+  DetailViews — pre-existed at session start, not reviewed or touched here.

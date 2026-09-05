@@ -998,6 +998,45 @@
   frontmatter for that reason (documented in the fixture README; candidate
   for a separate LinkIndex-feature fix, see PARKED.md).
 
+[locked] D84: The vault-tree walk and the FTS5 index rebuild both moved off
+  the main thread onto a serial `vaultQueue` (2026-09-05). Human authorized
+  this as the RED fix for a dogfood report: clicking "Reopen \"<folder>\"" on
+  macOS hung the UI for a long time on a large vault (Obsidian-style folder
+  with dozens of subfolders). Root cause was two previously-PARKED items
+  compounding: `refreshTree()`'s `FileItem(url:isDirectory:)` recurses the
+  ENTIRE tree synchronously (AMBER, "FileItem loads the entire tree eagerly"),
+  and `rebuildSearchIndex()` reads every Markdown file into FTS5 synchronously
+  (RED, "move search indexing off the main thread") — both on the main thread,
+  both triggered immediately (not debounced) the moment `rootURL` is assigned.
+
+  `refreshTree()` and `rebuildSearchIndex()` now dispatch their walk onto
+  `vaultQueue` (serial, `.userInitiated`) and hop back to the main thread only
+  to publish `rootItem` / `searchIndex` / `linkIndex`. A `vaultGeneration`
+  counter, bumped by every `refreshTree()` call, is checked before a
+  background pass publishes — so a root switched again mid-walk cannot have
+  an older, slower pass overwrite a newer one.
+
+  SearchIndex's `:memory:` SQLite connection is safe to touch from a
+  background queue and read from the main thread: Apple's SQLite ships
+  thread-safe (serialized) by default, and `FileItem.children` is `@Published`
+  but is set exactly once, at construction, and never reassigned afterward
+  (verified by grep) — so walking a tree already handed to `rootItem` off the
+  main thread is a read of frozen state, not a race.
+
+  Deliberate behavior change from D73: "the first query after opening a root
+  is never empty" no longer holds as a hard guarantee — the immediate-rebuild
+  path (`scheduleIndexRebuild`'s `searchIndex == nil` branch) is now also
+  asynchronous, so a search issued in the first instant after opening a very
+  large folder can transiently see an empty index. Accepted: the alternative
+  is the exact hang being fixed.
+
+  Verified: `xcodegen generate` + both `Kitib-macOS` and `Kitib-iOS`
+  (simulator) BUILD SUCCEEDED; KitibTests 548/548 executed with the sole
+  pre-existing `NewFileTargetTests` failure unchanged (AppState is Sources/
+  Shared, outside KitibTests per D16, so this is a compile + regression check,
+  not new unit coverage). Not verified: an actual large vault on a real
+  device — that check is the human's, same as D77/D78's UI-only changes.
+
 [locked] D83: Problems Panel spec APPROVED, slice 1 built (2026-09-01).
   Human confirmed specs/problems-panel.md. The panel is the rules engine's
   first call site. Implementation rulings, all GREEN:
