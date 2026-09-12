@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Push the branch after every commit (the human's ruling, 2026-09-12).
+#
+# WHY THIS EXISTS: three commits stood unpushed on 2026-09-12, the newest of them from 5 September,
+# because `main` had no upstream configured and a commit was treated as the end of the session. The
+# remote is part of the work unit now, so it is pushed here rather than depending on anyone remembering.
+#
+# This file is the tracked source of truth for the hook. Install it in a clone with:
+#   cp scripts/hooks/post-commit .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+#
+# A failed push must never fail the commit that just succeeded, so every path exits 0 and a failure is
+# named on stderr instead: the commit is then LOCAL ONLY until the push goes through.
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
+[ -n "$branch" ] || exit 0
+
+# No upstream configured means there is nothing to push to, and inventing one is not this hook's
+# business. It is worth a loud note here rather than a silent skip, because a branch with no upstream
+# is exactly how this repository's commits went unpushed without anyone noticing.
+if ! git rev-parse --abbrev-ref "$branch@{upstream}" >/dev/null 2>&1; then
+  echo "post-commit: branch '$branch' has NO upstream, so this commit is LOCAL ONLY. Run: git push -u origin $branch" >&2
+  exit 0
+fi
+
+if git push origin "$branch" >/dev/null 2>&1; then
+  echo "post-commit: pushed $branch to origin."
+else
+  echo "post-commit: push of $branch FAILED. This commit is LOCAL ONLY; run 'git push origin $branch' when the network is back." >&2
+fi
+exit 0

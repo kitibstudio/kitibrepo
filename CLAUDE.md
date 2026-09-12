@@ -100,8 +100,11 @@ A feature wrongly marked ✅ is worse than one marked ⬜ — the reconciliation
 4. Append any deferred idea to `PARKED.md`
 5. Rewrite `CURRENT.md` with the **next** task and any gotchas found
 6. Commit — the message is the session summary
+7. Push — `scripts/hooks/post-commit` pushes `main` after every commit; if it reported a failure, run
+   `git push origin main` before stopping. A commit that has not left this machine is not a
+   checkpoint, and three of them stood unpushed on 2026-09-12 because `main` had no upstream set.
 
-A session that ends without 1–5 has put its work at risk. The checkpoint is part of the task, not admin.
+A session that ends without these has put its work at risk. The checkpoint is part of the task, not admin.
 
 ---
 
