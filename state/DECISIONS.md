@@ -1069,3 +1069,23 @@
   Suite: 548 tests (514 -> 548, D22), the only failure being the
   pre-existing NewFileTargetTests RED. Panel rendering and click-to-scroll
   remain a human/simulator check (D16), as the spec states.
+
+[locked] D85: macOS App Sandbox for Mac App Store / TestFlight (2026-10-21).
+  Human/coordinator authorized after Validate failed with:
+  "App sandbox not enabled" on `Kitib.app/Contents/MacOS/Kitib`.
+  Source of truth: `project.yml` `targets.Kitib-macOS.entitlements`
+  (path + properties); XcodeGen writes
+  `Resources/Kitib-macOS.entitlements` and sets CODE_SIGN_ENTITLEMENTS.
+  Entitlement property keys in YAML MUST be quoted
+  (`"com.apple.security.app-sandbox"`); unquoted dotted keys produced an
+  empty `<dict/>` and a binary with no sandbox — Validate would still fail.
+  Keys: `com.apple.security.app-sandbox` = true;
+  `com.apple.security.files.user-selected.read-write` (Open Folder /
+  NSSavePanel export); `com.apple.security.files.bookmarks.app-scope`
+  (AppState rootBookmark). No network entitlements — README offline /
+  bundled KaTeX+Mermaid. Supersedes D76's premise that "macOS is not
+  sandboxed" for distribution builds; `navigateUp()` now uses the same
+  security-scoped parent check on both platforms. Integrated terminal
+  under sandbox is parked (see PARKED.md) — no temporary exceptions added.
+  Verified: Release build embeds all three sandbox keys (plus
+  get-task-allow for local sign).

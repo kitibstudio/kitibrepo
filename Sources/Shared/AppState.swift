@@ -664,27 +664,25 @@ final class AppState: ObservableObject {
 
     /// Moves the root up one level to the current root's parent folder.
     ///
-    /// On macOS the app is not sandboxed, so a plain path to the parent just
-    /// works. On iOS the document-picker grant covers the picked folder and
-    /// its descendants only; a parent is normally out of scope, so when access
-    /// cannot be obtained the picker is re-presented instead; that is the
-    /// iPad-native way to grant a folder the user never picked. The filesystem
+    /// Both platforms are sandboxed for distribution (macOS App Sandbox for
+    /// Mac App Store / TestFlight; iOS document picker). The grant covers the
+    /// picked folder and its descendants only; a parent is normally out of
+    /// scope, so when access cannot be obtained the picker is re-presented
+    /// instead of navigating to a folder the app cannot read. The filesystem
     /// root is the ceiling: its parent is itself, so the guard below is the
     /// backstop behind the sidebar's disabled button.
     ///
     /// The save/clear happens only after a real upward move is confirmed, so a
-    /// cancelled iPad picker does not disturb the open document.
+    /// cancelled picker does not disturb the open document.
     func navigateUp() {
         guard let root = rootURL else { return }
         let parent = root.deletingLastPathComponent()
         guard parent.standardizedFileURL.path != root.standardizedFileURL.path else { return }
 
-        #if os(iOS)
         if !parent.startAccessingSecurityScopedResource() {
             chooseFolder()
             return
         }
-        #endif
 
         saveCurrentFile()
         selectedFileID = nil

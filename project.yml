@@ -32,6 +32,16 @@ targets:
       - path: web
         type: folder
         buildPhase: resources
+    # Mac App Store / TestFlight require App Sandbox on the main executable.
+    # XcodeGen writes quoted entitlement keys into Resources/Kitib-macOS.entitlements
+    # on generate. Hand-editing that file alone is wiped on the next generate.
+    # No network entitlements: preview/export use bundled KaTeX/Mermaid (README offline).
+    entitlements:
+      path: Resources/Kitib-macOS.entitlements
+      properties:
+        "com.apple.security.app-sandbox": true
+        "com.apple.security.files.user-selected.read-write": true
+        "com.apple.security.files.bookmarks.app-scope": true
     settings:
       base:
         PRODUCT_NAME: Kitib

@@ -300,6 +300,17 @@ but that is new interface behavior for a platform mode this app has never
 targeted, so it is AMBER, not GREEN, and belongs with N11 rather than as a
 one-line patch here.
 
+## 2026-10-21 — macOS integrated terminal under App Sandbox (D85)
+
+Mac App Store / TestFlight now requires App Sandbox (D85). The SwiftTerm
+panel still launches a real shell; a sandboxed parent cannot grant a full
+interactive shell without temporary-exception entitlements that App Review
+often rejects. Not added. Options for a later session (human pick): keep
+terminal as Developer-ID / direct distribution only; gate the Terminal UI
+in MAS builds; or negotiate a narrow temporary exception. Do not silently
+add `com.apple.security.temporary-exception.*` keys to clear a runtime
+failure.
+
 ## Problems panel: deferred (2026-09-01)
 
 Slice 1 (the panel) shipped this session (D83). Deferred, all beyond GREEN:
