@@ -326,3 +326,22 @@ Slice 1 (the panel) shipped this session (D83). Deferred, all beyond GREEN:
   files. Different product shape from the current-document panel.
 - **Per-keystroke / incremental evaluation**: CURRENT.md option 4; the pure
   (text) -> [Diagnostic] shape keeps it safe to add later.
+
+## 2026-10-24 — iPad upload validation: orientations not emitted (RED, project.yml)
+
+App Store Connect validation of the iOS build fails: "No orientations were
+specified in the com.sean.kitib bundle. To support iPad multitasking, specify
+the … UISupportedInterfaceOrientations Info.plist key."
+
+Cause: `project.yml` lines ~78-79 use `INFOPLIST_KEY_UISupportedInterfaceOrientations~iphone`
+and `~ipad`. `~iphone`/`~ipad` is the *Info.plist file* suffix, not an Xcode
+build-setting name, so `GENERATE_INFOPLIST_FILE` ignores both and no key is
+emitted. The build-setting forms are `_iPhone` / `_iPad`.
+
+Proposed fix (human to approve — Info.plist key, RED per CLAUDE.md §10):
+rename the two settings to
+  INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone
+  INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
+(values unchanged), then `xcodegen generate`, re-archive, bump
+CURRENT_PROJECT_VERSION, and re-validate. Verify with
+`plutil -p <Kitib-iOS.app>/Info.plist | grep -A5 Orientations`.
